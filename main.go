@@ -1,19 +1,19 @@
 package main
 
 import (
-	"os"
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"mime/quotedprintable"
 	"net/http"
 	"net/smtp"
-	"time"
-	"math/rand"
+	"os"
 	"strconv"
+	"time"
 )
 
 type Document struct {
@@ -31,14 +31,14 @@ func main() {
 	// if runEveryXMinute is set, a ticker executes the logic over and over again, otherwise the logic is executed once
 	rand.Seed(time.Now().UnixNano())
 	runEveryXMinute, err := strconv.Atoi(os.Getenv("runEveryXMinute"))
-    if err != nil {
-        log.Fatalf("runEveryXMinute Environment Variable is not a valid Number")
-    }
+	if err != nil {
+		log.Fatalf("runEveryXMinute Environment Variable is not a valid Number")
+	}
 
 	if err := processJob(); err != nil {
-        log.Fatalf("Error Process Job: %v", err)
-    }
-	
+		log.Fatalf("Error Process Job: %v", err)
+	}
+
 	if runEveryXMinute == -1 {
 		return
 	}
@@ -47,10 +47,10 @@ func main() {
 	defer ticker.Stop()
 
 	for range ticker.C {
-        if err := processJob(); err != nil {
-            log.Fatalf("Error Process Job: %v", err)
-        }
-    }
+		if err := processJob(); err != nil {
+			log.Fatalf("Error Process Job: %v", err)
+		}
+	}
 }
 
 func processJob() error {
@@ -88,9 +88,9 @@ func processJob() error {
 			log.Printf("Downloaded document: %s", doc.FileName)
 
 			err = SendEmailWithPDFBinaryAttachment(os.Getenv("smtpServer"), os.Getenv("smtpPort"),
-				os.Getenv("smtpEmail"), os.Getenv("smtpPassword"), os.Getenv("receiverEmail"),
+				os.Getenv("smtpEmail"), os.Getenv("smtpUser"), os.Getenv("smtpPassword"), os.Getenv("receiverEmail"),
 				os.Getenv("mailHeader"), os.Getenv("mailBody"), doc.FileName, bytes)
-				
+
 			if err != nil {
 				return fmt.Errorf("Error sending email: %v", err)
 			}
@@ -278,7 +278,7 @@ func getTagByName(tags []Tag, name string) (*Tag, error) {
 	return nil, fmt.Errorf("Tag %s is not available in server tags list", name)
 }
 
-func SendEmailWithPDFBinaryAttachment(smtpHost, smtpPort, sender, password, recipient, subject, body, filename string, attachment []byte) error {
+func SendEmailWithPDFBinaryAttachment(smtpHost, smtpPort, sender, user, password, recipient, subject, body, filename string, attachment []byte) error {
 	// Create the email header
 	header := make(map[string]string)
 	header["From"] = sender
@@ -318,7 +318,7 @@ func SendEmailWithPDFBinaryAttachment(smtpHost, smtpPort, sender, password, reci
 	b64.Close()
 	emailBuf.WriteString("\r\n--BOUNDARY--")
 
-	auth := smtp.PlainAuth("", sender, password, smtpHost)
+	auth := smtp.PlainAuth("", user, password, smtpHost)
 	err = smtp.SendMail(fmt.Sprintf("%s:%s", smtpHost, smtpPort), auth, sender, []string{recipient}, emailBuf.Bytes())
 
 	if err != nil {
