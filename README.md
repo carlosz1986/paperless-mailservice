@@ -70,6 +70,7 @@ The project can be configured using environment variables. Below are the details
 | `smtpEmail`            | Sender email address, which is also the username                                       | `mail.com`                             |
 | `smtpServer`           | An SMTP mail server, with TLS or without                                               | `smtpServer`                           |
 | `smtpPort`             | Port of the SMTP mail server                                                           | `587`                                  |
+| `smtpUser`             | SMTP Username                                                                          | `peter`                            |
 | `smtpPassword`         | SMTP password                                                                          | `fQsdfsdfs`                            |
 | `mailBody`             | A custom string that is added to the email body                                        | `You got a file ...`                   |
 | `mailHeader`           | A custom string that is added to the email header                                      | `Header - file`                        |
@@ -88,6 +89,7 @@ receiverEmail=you@get.it
 smtpEmail=bla@foo.bar
 smtpServer=mail.com
 smtpPort=587
+smtpUser=peter
 smtpPassword=fQsdfsdfs
 mailBody="You got a file ..."
 mailHeader="You got a file"
@@ -105,7 +107,7 @@ services:
     build:
       dockerfile: Dockerfile
       context: .
-    image: carlosz1986/paperless-mailservice:1.1
+    image: carlosz1986/paperless-mailservice:latest
     volumes:
       - .:/app
     environment:
@@ -117,6 +119,7 @@ services:
       smtpEmail: ${smtpEmail}
       smtpServer: ${smtpServer}
       smtpPort: ${smtpPort}
+      smtpUser: ${smtpUser}
       smtpPassword: ${smtpPassword}
       mailBody: ${mailBody}
       mailHeader: ${mailHeader}
@@ -128,7 +131,7 @@ services:
 The Docker image for this project is available on Docker Hub. You can pull the image using the following command:
 
 ```sh
-docker pull carlosz1986/paperless-mailservice:1.1
+docker pull carlosz1986/paperless-mailservice:latest
 ```
 
 Visit the [Docker Image Registry](https://hub.docker.com/r/carlosz1986/paperless-mailservice) for more details.
