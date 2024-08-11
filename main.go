@@ -36,7 +36,7 @@ func main() {
 	}
 
 	if err := processJob(); err != nil {
-		log.Fatalf("Error Process Job: %v", err)
+		log.Fatalf("error Process Job: %v", err)
 	}
 
 	if runEveryXMinute == -1 {
@@ -48,7 +48,7 @@ func main() {
 
 	for range ticker.C {
 		if err := processJob(); err != nil {
-			log.Fatalf("Error Process Job: %v", err)
+			log.Fatalf("error Process Job: %v", err)
 		}
 	}
 }
@@ -56,48 +56,48 @@ func main() {
 func processJob() error {
 	tags, err := getTags()
 	if err != nil {
-		return fmt.Errorf("Error getting tags: %v", err)
+		return fmt.Errorf("error getting tags: %v", err)
 	}
 
 	processedTag, err := getTagByName(tags, os.Getenv("processedTagName"))
 	if err != nil {
-		fmt.Errorf("Error loading processedTagName:%s from server: %v", os.Getenv("processedTagName"), err)
+		return fmt.Errorf("error loading processedTagName:%s from server: %v", os.Getenv("processedTagName"), err)
 	}
 
 	searchTag, err := getTagByName(tags, os.Getenv("searchTagName"))
 	if err != nil {
-		fmt.Errorf("Error loading searchTagName:%s from server: %v", os.Getenv("searchTagName"), err)
+		return fmt.Errorf("error loading searchTagName:%s from server: %v", os.Getenv("searchTagName"), err)
 	}
 
 	documents, err := getDocumentsByTag(*searchTag, *processedTag)
 	if err != nil {
-		fmt.Errorf("Error getting documents with tag: %v", err)
+		fmt.Errorf("error getting documents with tag: %v", err)
 		return err
 	}
 
 	if len(documents) == 0 {
-		log.Println("No documents found to process")
+		log.Println("no documents found to process")
 		return nil
 	}
 
 	for _, doc := range documents {
 		bytes, err := downloadDocumentBinary(doc)
 		if err != nil {
-			fmt.Errorf("Failed to download document ID %d: %v", doc.ID, err)
+			fmt.Errorf("failed to download document ID %d: %v", doc.ID, err)
 		} else {
-			log.Printf("Downloaded document: %s", doc.FileName)
+			log.Printf("downloaded document: %s", doc.FileName)
 
 			err = SendEmailWithPDFBinaryAttachment(os.Getenv("smtpServer"), os.Getenv("smtpPort"),
 				os.Getenv("smtpEmail"), os.Getenv("smtpUser"), os.Getenv("smtpPassword"), os.Getenv("receiverEmail"),
 				os.Getenv("mailHeader"), os.Getenv("mailBody"), doc.FileName, bytes)
 
 			if err != nil {
-				return fmt.Errorf("Error sending email: %v", err)
+				return fmt.Errorf("error sending email: %v", err)
 			}
 
 			err = addTagToDocument(doc, *processedTag)
 			if err != nil {
-				return fmt.Errorf("Coold not add Tag: %v", err)
+				return fmt.Errorf("coold not add Tag: %v", err)
 			}
 			log.Printf("document '%s' succesfully sent & processed", doc.FileName)
 		}
@@ -213,13 +213,13 @@ func addTagToDocument(document Document, tag Tag) error {
 
 	err := json.NewEncoder(b).Encode(p)
 	if err != nil {
-		return fmt.Errorf("Failed to marshal payload: %w", err)
+		return fmt.Errorf("failed to marshal payload: %w", err)
 	}
 
 	// Create the request
 	req, err := http.NewRequest("POST", url, b)
 	if err != nil {
-		return fmt.Errorf("Failed to create request: %w", err)
+		return fmt.Errorf("failed to create request: %w", err)
 	}
 
 	// Set the necessary headers
@@ -230,13 +230,13 @@ func addTagToDocument(document Document, tag Tag) error {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return fmt.Errorf("Failed to send request: %w", err)
+		return fmt.Errorf("failed to send request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	// Check the response status
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("Bulk Edit failed, Unexpected server status code: %d", resp.StatusCode)
+		return fmt.Errorf("bulk Edit failed, Unexpected server status code: %d", resp.StatusCode)
 	}
 
 	return nil
