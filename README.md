@@ -1,6 +1,6 @@
 # Paperless Mailservice
 
-Paperless Mailservice is a simple Go application that pulls all documents marked with a custom tag and sends them to a defined email address. You need an SMTP mail server, a running Paperless instance, and any environment to run this Docker container.
+Paperless Mailservice is a simple Go application that pulls all documents marked with a custom tag and sends them to a defined email address. You can define different rulesets that allows you to send docs with different tags to different email adresses. Besides you can also send one document to two different email adresses. You need an SMTP mail server, a running Paperless instance, and any environment to run this Docker container.
 
 ## Table of Contents
 
@@ -66,12 +66,13 @@ The project can be configured using a yaml config file named config.yaml. The fi
 | `Paperless` | `InstanceToken` | The Paperless API Token                                                               | `9d02951f3716e098b`                    |
 | `Paperless` | `ProcessedTagName`     | The application assigns a tag to every processed document to prevent sending twice. Add the string of the tag name. | `DatevSent`                            |
 | `Paperless` | `SearchTagName`        | The tag name used for searching documents e.g. marking them for sending.                                             | `SendToDatev`                          |
-| `Email` | `ReceiverAddress`        | Email address of the receiver                                                          | `fo@b.a`                        |
-| `Email` | `SMTPAddress`            | Sender email address, which is also the username                                       | `mail.com`                             |
+| `Paperless` | `ReceiverAddress`        | The tag name used for searching documents e.g. marking them for sending.                                             | `SendToDatev`                          |
+| `Paperless.Rules[]` | `Name`            | Custom Rule Name                                       | `OneDemoRule` |
+| `Paperless.Rules[]` | `ReceiverAddress`            | Email address of the receiver                                        | `you@get.it`                             |
+| `Paperless.Rules.Tags[]` | Keys            | Each Tag of that rule is one line, Tags are && linked                                        | `Invoices`                             |
 | `Email` | `SMTPServer`           | An SMTP mail server, with TLS or without                                               | `smtpServer`                           |
 | `Email` | `SMTPPort`             | Port of the SMTP mail server                                                           | `587`                                  |
 | `Email` | `SMTPConnectionType`   | SMTP Connection Type: If the Port is 587, normally starttls is correct. Otherwise tls. | `starttls` OR `tls`                                  |
-
 | `Email` | `SMTPUser`             | SMTP Username                                                                          | `peter`                            |
 | `Email` | `SMTPPassword`         | SMTP password                                                                          | `fQsdfsdfs`                            |
 | `Email` | `MailBody`             | A custom string that is added to the email body                                        | `You got a file ...`                   |
@@ -87,9 +88,19 @@ Paperless:
   InstanceURL: http://192.168.178.48:8000/api/
   InstanceToken: 9d02951f3716e098b
   ProcessedTagName: DatevSent
-  SearchTagName: SendToDatev
+  AddQueueTagName: SendToDatev
+  Rules:
+    - Name: "OneDemoRule"
+      Tags: #The Doc must hold all three tags 
+        - Seaside Docs
+        - Invoices
+        - Foobar
+      ReceiverAddress: you@get.it
+    - Name: "TwoDemoRule"
+      Tags: # You can create mutiple rules for a Tag combination to send the doc to different receivers
+        - OfflineDocs
+      ReceiverAddress: dont@get.it
 Email:
-  ReceiverAddress: you@get.it
   SMTPAddress: bla@foo.bar
   SMTPServer: mail.com
   SMTPPort: 587

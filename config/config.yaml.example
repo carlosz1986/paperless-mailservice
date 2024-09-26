@@ -2,9 +2,19 @@ Paperless:
   InstanceURL: http://192.168.178.48:8000/api/
   InstanceToken: 9d02951f3716e098b
   ProcessedTagName: DatevSent
-  SearchTagName: SendToDatev
+  AddQueueTagName: SendToDatev
+  Rules:
+    - Name: "OneDemoRule"
+    Tags: #The Doc must hold all three tags 
+        - Seaside Docs
+        - Invoices
+        - Foobar
+      ReceiverAddress: you@get.it
+    - Name: "TwoDemoRule"
+    Tags: # You can create mutiple rules for a Tag combination to send the doc to different receivers
+        - OfflineDocs
+      ReceiverAddress: dont@get.it
 Email:
-  ReceiverAddress: you@get.it
   SMTPAddress: bla@foo.bar
   SMTPServer: mail.com
   SMTPPort: 587

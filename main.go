@@ -12,6 +12,7 @@ import (
 	"mime/quotedprintable"
 	"net/http"
 	"net/smtp"
+	"strings"
 	"time"
 )
 
@@ -19,6 +20,7 @@ type Document struct {
 	ID       int    `json:"id"`
 	Title    string `json:"title"`
 	FileName string `json:"archived_file_name"`
+	TagIDs   []int  `json:"tags"`
 }
 
 type Tag struct {
@@ -28,6 +30,8 @@ type Tag struct {
 
 func main() {
 	LoadConfig()
+
+	PrintRules()
 
 	// if runEveryXMinute is set, a ticker executes the logic over and over again, otherwise the logic is executed once
 	rand.Seed(time.Now().UnixNano())
@@ -56,14 +60,14 @@ func processJob() error {
 		return fmt.Errorf("error getting tags: %v", err)
 	}
 
-	processedTag, err := getTagByName(tags, Config.Paperless.ProcessedTagName)
-	if err != nil {
-		return fmt.Errorf("error loading processedTagName:%s from server: %v", Config.Paperless.ProcessedTagName, err)
+	processedTag := getTagByName(tags, Config.Paperless.ProcessedTagName)
+	if processedTag == nil {
+		return fmt.Errorf("error finding processedTagName:%s in list from server", Config.Paperless.ProcessedTagName)
 	}
 
-	searchTag, err := getTagByName(tags, Config.Paperless.SearchTagName)
-	if err != nil {
-		return fmt.Errorf("error loading searchTagName:%s from server: %v", Config.Paperless.SearchTagName, err)
+	searchTag := getTagByName(tags, Config.Paperless.AddQueueTagName)
+	if searchTag == nil {
+		return fmt.Errorf("error finding searchTagName:%s in list from from server", Config.Paperless.AddQueueTagName, err)
 	}
 
 	documents, err := getDocumentsByTag(*searchTag, *processedTag)
@@ -78,26 +82,80 @@ func processJob() error {
 	}
 
 	for _, doc := range documents {
-		bytes, err := downloadDocumentBinary(doc)
-		if err != nil {
-			fmt.Errorf("failed to download document ID %d: %v", doc.ID, err)
-		} else {
-			log.Printf("downloaded document: %s", doc.FileName)
+		// check if rule for document exists, and process doc
+		// all tags of a rule need to be available for the doc
+		for _, rule := range Config.Paperless.Rules {
+			docMatchesRule := false
+			for _, ruleTag := range rule.Tags {
+				foundDocTag := false
+				for _, id := range doc.TagIDs {
+					found := getTagByID(tags, id)
+					if found == nil {
+						return fmt.Errorf("Tag %d is not available in tags list", id)
+					}
 
-			err = SendEmailWithPDFBinaryAttachment(Config.Email.SMTPServer, Config.Email.SMTPPort, Config.Email.SMTPConnectionType,
-				Config.Email.SMTPAddress, Config.Email.SMTPUser, Config.Email.SMTPPassword, Config.Email.ReceiverAddress,
-				Config.Email.MailHeader, Config.Email.MailBody, doc.FileName, bytes)
+					if ruleTag == found.Name {
+						foundDocTag = true
+					}
+				}
+				if foundDocTag {
+					docMatchesRule = true
+				} else {
+					docMatchesRule = false
+					break
+				}
+			}
+			if !docMatchesRule {
+				// if the rule does not match, try next rule
+				continue
+			}
+			// found a rule that matches, start processing
+			log.Printf("found Rule: %s, that matches Tag(s) (%s) in document: '%s' (%d)", rule.Name, strings.Join(rule.Tags, ","), doc.FileName, doc.ID)
 
-			if err != nil {
-				return fmt.Errorf("error sending email: %v", err)
+			if err := SendProcessDoc(doc, processedTag, rule.ReceiverAddress); err != nil {
+				log.Printf("error processing Doc: %v", err)
+				continue
 			}
 
-			err = addTagToDocument(doc, *processedTag)
-			if err != nil {
-				return fmt.Errorf("coold not add Tag: %v", err)
-			}
-			log.Printf("document '%s' succesfully sent & processed", doc.FileName)
+			log.Printf("document '%s' (%d) succesfully sent to '%s'", doc.FileName, doc.ID, rule.ReceiverAddress)
+			goto nextDoc
 		}
+		log.Printf("document '%s' (%d) marked for processing, but no Ruleset matches the tags ...", doc.FileName, doc.ID)
+	nextDoc:
+	}
+
+	return nil
+}
+
+func SendProcessDoc(doc Document, processedTag *Tag, receiverAddress string) error {
+	// download document
+	bytes, err := downloadDocumentBinary(doc)
+	if err != nil {
+		return fmt.Errorf("failed to download document: '%s' (%d): %v", doc.FileName, doc.ID, err)
+	}
+
+	log.Printf("downloaded document: '%s' (%d)", doc.FileName, doc.ID)
+
+	// found right rule, send it
+	err = SendEmailWithPDFBinaryAttachment(Config.Email.SMTPServer,
+		Config.Email.SMTPPort,
+		Config.Email.SMTPConnectionType,
+		Config.Email.SMTPAddress,
+		Config.Email.SMTPUser,
+		Config.Email.SMTPPassword,
+		receiverAddress,
+		Config.Email.MailHeader,
+		Config.Email.MailBody,
+		doc.FileName,
+		bytes)
+
+	if err != nil {
+		return fmt.Errorf("error sending email: %v", err)
+	}
+
+	err = addTagToDocument(doc, *processedTag)
+	if err != nil {
+		return fmt.Errorf("could not add Tag for document '%s' (%d): %v", doc.FileName, doc.ID, err)
 	}
 	return nil
 }
@@ -266,13 +324,22 @@ func downloadDocumentBinary(doc Document) ([]byte, error) {
 	return body, nil
 }
 
-func getTagByName(tags []Tag, name string) (*Tag, error) {
+func getTagByID(tags []Tag, id int) *Tag {
 	for _, tag := range tags {
-		if tag.Name == name {
-			return &tag, nil
+		if tag.ID == id {
+			return &tag
 		}
 	}
-	return nil, fmt.Errorf("Tag %s is not available in server tags list", name)
+	return nil
+}
+
+func getTagByName(tags []Tag, name string) *Tag {
+	for _, tag := range tags {
+		if tag.Name == name {
+			return &tag
+		}
+	}
+	return nil
 }
 
 func SendEmailWithPDFBinaryAttachment(smtpHost, smtpPort, connectionType, sender, user, password, recipient, subject, body, filename string, attachment []byte) error {
