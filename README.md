@@ -70,6 +70,7 @@ The project can be configured using environment variables. Below are the details
 | `smtpEmail`            | Sender email address, which is also the username                                       | `mail.com`                             |
 | `smtpServer`           | An SMTP mail server, with TLS or without                                               | `smtpServer`                           |
 | `smtpPort`             | Port of the SMTP mail server                                                           | `587`                                  |
+| `smtpConnectionType`   | SMTP Connection Type: If the Port is 587, normally starttls is correct. Otherwise tls. | `starttls` OR `tls`                                  |
 | `smtpUser`             | SMTP Username                                                                          | `peter`                            |
 | `smtpPassword`         | SMTP password                                                                          | `fQsdfsdfs`                            |
 | `mailBody`             | A custom string that is added to the email body                                        | `You got a file ...`                   |
@@ -89,6 +90,7 @@ receiverEmail=you@get.it
 smtpEmail=bla@foo.bar
 smtpServer=mail.com
 smtpPort=587
+smtpConnectionType=starttls
 smtpUser=peter
 smtpPassword=fQsdfsdfs
 mailBody="You got a file ..."
@@ -119,6 +121,7 @@ services:
       smtpEmail: ${smtpEmail}
       smtpServer: ${smtpServer}
       smtpPort: ${smtpPort}
+      smtpConnectionType: ${smtpConnectionType}
       smtpUser: ${smtpUser}
       smtpPassword: ${smtpPassword}
       mailBody: ${mailBody}
