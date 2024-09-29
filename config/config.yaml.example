@@ -1,0 +1,16 @@
+Paperless:
+  InstanceURL: http://192.168.178.48:8000/api/
+  InstanceToken: 9d02951f3716e098b
+  ProcessedTagName: DatevSent
+  SearchTagName: SendToDatev
+Email:
+  ReceiverAddress: you@get.it
+  SMTPAddress: bla@foo.bar
+  SMTPServer: mail.com
+  SMTPPort: 587
+  SMTPConnectionType: starttls
+  SMTPUser: bla@foo.bar
+  SMTPPassword: fQsdfsdfs
+  MailBody: You got a file ...
+  MailHeader: You got a file
+RunEveryXMinute: 1

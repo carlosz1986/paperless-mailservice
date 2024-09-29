@@ -12,8 +12,6 @@ import (
 	"mime/quotedprintable"
 	"net/http"
 	"net/smtp"
-	"os"
-	"strconv"
 	"time"
 )
 
@@ -29,22 +27,20 @@ type Tag struct {
 }
 
 func main() {
+	LoadConfig()
+
 	// if runEveryXMinute is set, a ticker executes the logic over and over again, otherwise the logic is executed once
 	rand.Seed(time.Now().UnixNano())
-	runEveryXMinute, err := strconv.Atoi(os.Getenv("runEveryXMinute"))
-	if err != nil {
-		log.Fatalf("runEveryXMinute Environment Variable is not a valid Number")
-	}
 
 	if err := processJob(); err != nil {
 		log.Fatalf("error Process Job: %v", err)
 	}
 
-	if runEveryXMinute == -1 {
+	if Config.RunEveryXMinute == -1 {
 		return
 	}
 
-	ticker := time.NewTicker(time.Duration(runEveryXMinute) * time.Minute)
+	ticker := time.NewTicker(time.Duration(Config.RunEveryXMinute) * time.Minute)
 	defer ticker.Stop()
 
 	for range ticker.C {
@@ -60,14 +56,14 @@ func processJob() error {
 		return fmt.Errorf("error getting tags: %v", err)
 	}
 
-	processedTag, err := getTagByName(tags, os.Getenv("processedTagName"))
+	processedTag, err := getTagByName(tags, Config.Paperless.ProcessedTagName)
 	if err != nil {
-		return fmt.Errorf("error loading processedTagName:%s from server: %v", os.Getenv("processedTagName"), err)
+		return fmt.Errorf("error loading processedTagName:%s from server: %v", Config.Paperless.ProcessedTagName, err)
 	}
 
-	searchTag, err := getTagByName(tags, os.Getenv("searchTagName"))
+	searchTag, err := getTagByName(tags, Config.Paperless.SearchTagName)
 	if err != nil {
-		return fmt.Errorf("error loading searchTagName:%s from server: %v", os.Getenv("searchTagName"), err)
+		return fmt.Errorf("error loading searchTagName:%s from server: %v", Config.Paperless.SearchTagName, err)
 	}
 
 	documents, err := getDocumentsByTag(*searchTag, *processedTag)
@@ -88,9 +84,9 @@ func processJob() error {
 		} else {
 			log.Printf("downloaded document: %s", doc.FileName)
 
-			err = SendEmailWithPDFBinaryAttachment(os.Getenv("smtpServer"), os.Getenv("smtpPort"), os.Getenv("smtpConnectionType"),
-				os.Getenv("smtpEmail"), os.Getenv("smtpUser"), os.Getenv("smtpPassword"), os.Getenv("receiverEmail"),
-				os.Getenv("mailHeader"), os.Getenv("mailBody"), doc.FileName, bytes)
+			err = SendEmailWithPDFBinaryAttachment(Config.Email.SMTPServer, Config.Email.SMTPPort, Config.Email.SMTPConnectionType,
+				Config.Email.SMTPAddress, Config.Email.SMTPUser, Config.Email.SMTPPassword, Config.Email.ReceiverAddress,
+				Config.Email.MailHeader, Config.Email.MailBody, doc.FileName, bytes)
 
 			if err != nil {
 				return fmt.Errorf("error sending email: %v", err)
@@ -111,13 +107,13 @@ func getTags() ([]Tag, error) {
 	page := 1
 
 	for {
-		url := fmt.Sprintf("%stags/?page=%d", os.Getenv("paperlessInstanceURL"), page)
+		url := fmt.Sprintf("%stags/?page=%d", Config.Paperless.InstanceURL, page)
 		req, err := http.NewRequest("GET", url, nil)
 		if err != nil {
 			return nil, err
 		}
 
-		req.Header.Set("Authorization", fmt.Sprintf("Token %s", os.Getenv("paperlessInstanceToken")))
+		req.Header.Set("Authorization", fmt.Sprintf("Token %s", Config.Paperless.InstanceToken))
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
@@ -158,13 +154,13 @@ func getDocumentsByTag(tag Tag, processedTag Tag) ([]Document, error) {
 	page := 1
 
 	for {
-		url := fmt.Sprintf("%sdocuments/?page=%d&tags__id__all=%d&tags__id__none=%d", os.Getenv("paperlessInstanceURL"), page, tag.ID, processedTag.ID)
+		url := fmt.Sprintf("%sdocuments/?page=%d&tags__id__all=%d&tags__id__none=%d", Config.Paperless.InstanceURL, page, tag.ID, processedTag.ID)
 		req, err := http.NewRequest("GET", url, nil)
 		if err != nil {
 			return nil, err
 		}
 
-		req.Header.Set("Authorization", fmt.Sprintf("Token %s", os.Getenv("paperlessInstanceToken")))
+		req.Header.Set("Authorization", fmt.Sprintf("Token %s", Config.Paperless.InstanceToken))
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
@@ -199,7 +195,7 @@ func getDocumentsByTag(tag Tag, processedTag Tag) ([]Document, error) {
 }
 
 func addTagToDocument(document Document, tag Tag) error {
-	url := fmt.Sprintf("%sdocuments/bulk_edit/", os.Getenv("paperlessInstanceURL"))
+	url := fmt.Sprintf("%sdocuments/bulk_edit/", Config.Paperless.InstanceURL)
 
 	type payload struct {
 		Documents  []int          `json:"documents"`
@@ -225,7 +221,7 @@ func addTagToDocument(document Document, tag Tag) error {
 
 	// Set the necessary headers
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Token %s", os.Getenv("paperlessInstanceToken")))
+	req.Header.Set("Authorization", fmt.Sprintf("Token %s", Config.Paperless.InstanceToken))
 
 	// Send the request
 	client := &http.Client{}
@@ -244,13 +240,13 @@ func addTagToDocument(document Document, tag Tag) error {
 }
 
 func downloadDocumentBinary(doc Document) ([]byte, error) {
-	url := fmt.Sprintf("%sdocuments/%d/download/", os.Getenv("paperlessInstanceURL"), doc.ID)
+	url := fmt.Sprintf("%sdocuments/%d/download/", Config.Paperless.InstanceURL, doc.ID)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	req.Header.Set("Authorization", fmt.Sprintf("Token %s", os.Getenv("paperlessInstanceToken")))
+	req.Header.Set("Authorization", fmt.Sprintf("Token %s", Config.Paperless.InstanceToken))
 
 	client := &http.Client{}
 	resp, err := client.Do(req)

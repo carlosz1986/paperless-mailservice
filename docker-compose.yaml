@@ -1,24 +1,9 @@
-version: "3.9"
 services:
   paperless-mailservice:
     build:
       dockerfile: Dockerfile
       context: .
-    image: carlosz1986/paperless-mailservice:1.3
+    image: carlosz1986/paperless-mailservice:1.4
     volumes:
       - .:/app
-    environment:
-      paperlessInstanceURL: ${paperlessInstanceURL}
-      paperlessInstanceToken: ${paperlessInstanceToken}
-      processedTagName: ${processedTagName}
-      searchTagName: ${searchTagName}
-      receiverEmail: ${receiverEmail}
-      smtpEmail: ${smtpEmail}
-      smtpServer: ${smtpServer}
-      smtpPort: ${smtpPort}
-      smtpConnectionType: ${smtpConnectionType}
-      smtpPassword: ${smtpPassword}
-      smtpUser: ${smtpUser}
-      mailBody: ${mailBody}
-      mailHeader: ${mailHeader}
-      runEveryXMinute: ${runEveryXMinute}
+      - ./config:/config

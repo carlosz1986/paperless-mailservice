@@ -10,8 +10,8 @@ Paperless Mailservice is a simple Go application that pulls all documents marked
   - [Setting up Paperless-ngx](#setting-up-paperless-ngx)
   - [Deployment](#deployment)
   - [Configuration](#configuration)
-    - [Environment Variables](#environment-variables)
-    - [Example Values](#example-values)
+    - [Yaml Config Variables](#yaml-config-variables)
+    - [Yaml Example Values](#yaml-example-values)
   - [Docker Compose](#docker-compose)
   - [Docker Image Registry](#docker-image-registry)
 
@@ -34,9 +34,9 @@ To deploy the project simply, you need to have Docker and Docker Compose install
    git clone https://github.com/carlosz1986/paperless-mailservice.git
    cd paperless-mailservice
    ```
-2. Create a .env config file based on the sample:
+2. Create a config.yaml config file based on the sample:
    ```sh
-   cp .env.example .env
+   cd ./config && cp config.yaml.example config.yaml && cd ..
    ```
 
 3. Run the project using Docker Compose:
@@ -56,46 +56,49 @@ To deploy the project simply, you need to have Docker and Docker Compose install
 
 ## Configuration
 
-The project can be configured using environment variables. Below are the details on how to set up and configure these variables.
+The project can be configured using a yaml config file named config.yaml. The file needs to be placed in `./config/` or has to be mounted into the container by using a volume. Below are the details on how to set up and configure these variables.
 
-### Environment Variables
+### Yaml Config Variables
 
-| Variable Name          | Description                                                                            | Example Value                          |
-|------------------------|----------------------------------------------------------------------------------------|----------------------------------------|
-| `paperlessInstanceURL` | The API Endpoint of the Paperless instance. Don't forget the / at the end.             | `http://192.168.178.48:8000/api/`      |
-| `paperlessInstanceToken` | The Paperless API Token                                                               | `9d02951f3716e098b`                    |
-| `processedTagName`     | The application assigns a tag to every processed document to prevent sending twice. Add the string of the tag name. | `DatevSent`                            |
-| `searchTagName`        | The tag name used for searching documents e.g. marking them for sending.                                             | `SendToDatev`                          |
-| `receiverEmail`        | Email address of the receiver                                                          | `receiverEmail`                        |
-| `smtpEmail`            | Sender email address, which is also the username                                       | `mail.com`                             |
-| `smtpServer`           | An SMTP mail server, with TLS or without                                               | `smtpServer`                           |
-| `smtpPort`             | Port of the SMTP mail server                                                           | `587`                                  |
-| `smtpConnectionType`   | SMTP Connection Type: If the Port is 587, normally starttls is correct. Otherwise tls. | `starttls` OR `tls`                                  |
-| `smtpUser`             | SMTP Username                                                                          | `peter`                            |
-| `smtpPassword`         | SMTP password                                                                          | `fQsdfsdfs`                            |
-| `mailBody`             | A custom string that is added to the email body                                        | `You got a file ...`                   |
-| `mailHeader`           | A custom string that is added to the email header                                      | `Header - file`                        |
-| `runEveryXMinute`      | Minutes break between every execution. -1 starts the execution once                    | `1`                                    |
+| Type | Variable Name          | Description                                                                            | Example Value                          |
+|------|------------------------|----------------------------------------------------------------------------------------|----------------------------------------|
+| `Paperless` | `InstanceURL` | The API Endpoint of the Paperless instance. Don't forget the / at the end.             | `http://192.168.178.48:8000/api/`      |
+| `Paperless` | `InstanceToken` | The Paperless API Token                                                               | `9d02951f3716e098b`                    |
+| `Paperless` | `ProcessedTagName`     | The application assigns a tag to every processed document to prevent sending twice. Add the string of the tag name. | `DatevSent`                            |
+| `Paperless` | `SearchTagName`        | The tag name used for searching documents e.g. marking them for sending.                                             | `SendToDatev`                          |
+| `Email` | `ReceiverAddress`        | Email address of the receiver                                                          | `fo@b.a`                        |
+| `Email` | `SMTPAddress`            | Sender email address, which is also the username                                       | `mail.com`                             |
+| `Email` | `SMTPServer`           | An SMTP mail server, with TLS or without                                               | `smtpServer`                           |
+| `Email` | `SMTPPort`             | Port of the SMTP mail server                                                           | `587`                                  |
+| `Email` | `SMTPConnectionType`   | SMTP Connection Type: If the Port is 587, normally starttls is correct. Otherwise tls. | `starttls` OR `tls`                                  |
 
-### Example Values
+| `Email` | `SMTPUser`             | SMTP Username                                                                          | `peter`                            |
+| `Email` | `SMTPPassword`         | SMTP password                                                                          | `fQsdfsdfs`                            |
+| `Email` | `MailBody`             | A custom string that is added to the email body                                        | `You got a file ...`                   |
+| `Email` | `MailHeader`           | A custom string that is added to the email header                                      | `Header - file`                        |
+| `General` | `RunEveryXMinute`      | Minutes break between every execution. -1 starts the execution once                    | `1`                                    |
 
-Put the .env file in the docker-compose.yaml folder. It will be consumed automatically on container start. Here is an example of how to set environment variables in your `.env` file:
+### Yaml Example Values
 
-```env
-paperlessInstanceURL="http://192.168.178.48:8000/api/"
-paperlessInstanceToken=9d02951f3716e098b
-processedTagName=DatevSent
-searchTagName=SendToDatev
-receiverEmail=you@get.it
-smtpEmail=bla@foo.bar
-smtpServer=mail.com
-smtpPort=587
-smtpConnectionType=starttls
-smtpUser=peter
-smtpPassword=fQsdfsdfs
-mailBody="You got a file ..."
-mailHeader="You got a file"
-runEveryXMinute=1
+Put the config.yaml file in the ./config/ folder. It will be consumed automatically on container start. Here is an example of how the `config.yaml` file should look like:
+
+```yaml
+Paperless:
+  InstanceURL: http://192.168.178.48:8000/api/
+  InstanceToken: 9d02951f3716e098b
+  ProcessedTagName: DatevSent
+  SearchTagName: SendToDatev
+Email:
+  ReceiverAddress: you@get.it
+  SMTPAddress: bla@foo.bar
+  SMTPServer: mail.com
+  SMTPPort: 587
+  SMTPConnectionType: starttls
+  SMTPUser: bla@foo.bar
+  SMTPPassword: fQsdfsdfs
+  MailBody: You got a file ...
+  MailHeader: You got a file
+RunEveryXMinute: 1
 ```
 
 ## Docker Compose
@@ -103,7 +106,6 @@ runEveryXMinute=1
 The project includes a `docker-compose.yml` file for easy deployment. Below is a basic configuration:
 
 ```yaml
-version: "3.9"
 services:
   paperless-mailservice:
     build:
@@ -112,21 +114,7 @@ services:
     image: carlosz1986/paperless-mailservice:latest
     volumes:
       - .:/app
-    environment:
-      paperlessInstanceURL: ${paperlessInstanceURL}
-      paperlessInstanceToken: ${paperlessInstanceToken}
-      processedTagName: ${processedTagName}
-      searchTagName: ${searchTagName}
-      receiverEmail: ${receiverEmail}
-      smtpEmail: ${smtpEmail}
-      smtpServer: ${smtpServer}
-      smtpPort: ${smtpPort}
-      smtpConnectionType: ${smtpConnectionType}
-      smtpUser: ${smtpUser}
-      smtpPassword: ${smtpPassword}
-      mailBody: ${mailBody}
-      mailHeader: ${mailHeader}
-      runEveryXMinute: ${runEveryXMinute}
+      - ./config:/config
 ```
 
 ## Docker Image Registry
