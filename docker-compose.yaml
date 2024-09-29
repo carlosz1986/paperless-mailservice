@@ -4,7 +4,7 @@ services:
     build:
       dockerfile: Dockerfile
       context: .
-    image: carlosz1986/paperless-mailservice:latest
+    image: carlosz1986/paperless-mailservice:1.3
     volumes:
       - .:/app
     environment:
@@ -16,6 +16,7 @@ services:
       smtpEmail: ${smtpEmail}
       smtpServer: ${smtpServer}
       smtpPort: ${smtpPort}
+      smtpConnectionType: ${smtpConnectionType}
       smtpPassword: ${smtpPassword}
       smtpUser: ${smtpUser}
       mailBody: ${mailBody}
