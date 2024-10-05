@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"reflect"
+	"strings"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/spf13/viper"
@@ -17,11 +18,15 @@ type config struct {
 	Paperless struct {
 		InstanceURL      string `validate:"required,url"`
 		InstanceToken    string `validate:"required"`
-		SearchTagName    string `validate:"required"`
+		AddQueueTagName  string `validate:"required"`
 		ProcessedTagName string `validate:"required"`
+		Rules            []struct {
+			Name            string `validate:"required"`
+			ReceiverAddress string `validate:"required,email"`
+			Tags            []string
+		}
 	}
 	Email struct {
-		ReceiverAddress    string `validate:"required,email"`
 		SMTPAddress        string `validate:"required,email"`
 		SMTPServer         string `validate:"required,hostname"`
 		SMTPPort           string `validate:"required,min=1,max=65535"`
@@ -39,18 +44,18 @@ func validateConfigKeys() error {
 	typeValidations := map[string]string{
 		"Paperless.InstanceURL":      "string",
 		"Paperless.InstanceToken":    "string",
-		"Paperless.SearchTagName":    "string",
+		"Paperless.AddQueueTagName":  "string",
 		"Paperless.ProcessedTagName": "string",
-		"Email.ReceiverAddress":      "string",
-		"Email.SMTPAddress":          "string",
-		"Email.SMTPServer":           "string",
-		"Email.SMTPPort":             "int",
-		"Email.SMTPUser":             "string",
-		"Email.SMTPConnectionType":   "string",
-		"Email.SMTPPassword":         "string",
-		"Email.MailBody":             "string",
-		"Email.MailHeader":           "string",
-		"RunEveryXMinute":            "int",
+		// todo Rules
+		"Email.SMTPAddress":        "string",
+		"Email.SMTPServer":         "string",
+		"Email.SMTPPort":           "int",
+		"Email.SMTPConnectionType": "string",
+		"Email.SMTPUser":           "string",
+		"Email.SMTPPassword":       "string",
+		"Email.MailBody":           "string",
+		"Email.MailHeader":         "string",
+		"RunEveryXMinute":          "int",
 	}
 
 	for key, expectedType := range typeValidations {
@@ -117,4 +122,16 @@ func LoadConfig() {
 	if err := validateWithPlayground(Config); err != nil {
 		log.Fatalf("Struct validation failed: %v", err)
 	}
+}
+
+// PrintRules prints the current config to stdout
+func PrintRules() {
+	log.Printf("Documents with Tag %s at paperless will be marked for queuing", Config.Paperless.AddQueueTagName)
+
+	for _, rule := range Config.Paperless.Rules {
+		log.Printf("Found Rule \"%s\": Send Documents with Tag(s): \"%s\" to address %s", rule.Name, strings.Join(rule.Tags, ","), rule.ReceiverAddress)
+	}
+
+	log.Printf("All processed documents will be marked with Tag: %s at paperless", Config.Paperless.ProcessedTagName)
+
 }
