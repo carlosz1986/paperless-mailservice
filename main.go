@@ -120,21 +120,21 @@ func processJob() error {
 
 			correspondent := getCorrespondentByID(correspondents, doc.CorrespondentId)
 			if correspondent == nil {
-				return fmt.Errorf("could not find correspondent for doc with id=%d", doc.ID)
+				log.Printf("warning: could not find a correspondent for doc with id=%d", doc.ID)
 			}
 
 			documentType := getDocumentTypeByID(documentTypes, doc.DocumentTypeId)
 			if documentType == nil {
-				return fmt.Errorf("could not find documentTyppe for doc with id=%d", doc.ID)
+				log.Printf("warning: could not find a document type for doc with id=%d", doc.ID)
 			}
 
 			storagePath := getStoragePathByID(storagePaths, doc.StoragePath)
-			if storagePaths == nil {
-				return fmt.Errorf("could not find documentTyppe for doc with id=%d", doc.ID)
+			if storagePath == nil {
+				log.Printf("warning: could not find a storage path for doc with id=%d", doc.ID)
 			}
 
-			mailHeader := prepareMail(Config.Email.MailHeader, *user, *correspondent, *documentType, *storagePath, doc)
-			mailBody := prepareMail(Config.Email.MailBody, *user, *correspondent, *documentType, *storagePath, doc)
+			mailHeader := prepareMail(Config.Email.MailHeader, user, correspondent, documentType, storagePath, &doc)
+			mailBody := prepareMail(Config.Email.MailBody, user, correspondent, documentType, storagePath, &doc)
 
 			if err := SendProcessDoc(doc, processedTag, mailHeader, mailBody, rule.ReceiverAddress); err != nil {
 				log.Printf("error processing Doc: %v", err)
@@ -151,18 +151,24 @@ func processJob() error {
 	return nil
 }
 
-func prepareMail(str string, user User, correspondent Correspondent, documenType DocumentType, storagePath StoragePath, document Document) string {
+func prepareMail(str string, user *User, correspondent *Correspondent, documenType *DocumentType, storagePath *StoragePath, document *Document) string {
 	str = strings.ReplaceAll(str, "%user_name%", user.Username)
 	str = strings.ReplaceAll(str, "%user_email%", user.Email)
 	str = strings.ReplaceAll(str, "%first_name%", user.FirstName)
 	str = strings.ReplaceAll(str, "%last_name%", user.LastName)
 
-	str = strings.ReplaceAll(str, "%correspondent_name%", correspondent.Name)
+	if correspondent != nil {
+		str = strings.ReplaceAll(str, "%correspondent_name%", correspondent.Name)
+	}
 
-	str = strings.ReplaceAll(str, "%document_type_name%", documenType.Name)
+	if documenType != nil {
+		str = strings.ReplaceAll(str, "%document_type_name%", documenType.Name)
+	}
 
-	str = strings.ReplaceAll(str, "%storage_path_name%", storagePath.Name)
-	str = strings.ReplaceAll(str, "%storage_path%", storagePath.Path)
+	if storagePath != nil {
+		str = strings.ReplaceAll(str, "%storage_path_name%", storagePath.Name)
+		str = strings.ReplaceAll(str, "%storage_path%", storagePath.Path)
+	}
 
 	str = strings.ReplaceAll(str, "%document_id%", strconv.Itoa(document.ID))
 	str = strings.ReplaceAll(str, "%document_title%", document.Title)
