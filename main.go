@@ -115,22 +115,22 @@ func processJob() error {
 
 			user := getUserByID(users, doc.OwnerId)
 			if user == nil {
-				return fmt.Errorf("could not find user for doc with id=%d", doc.ID)
+				log.Printf("warning: could not find user for doc with id=%d, placeholders won't work", doc.ID)
 			}
 
 			correspondent := getCorrespondentByID(correspondents, doc.CorrespondentId)
 			if correspondent == nil {
-				log.Printf("warning: could not find a correspondent for doc with id=%d", doc.ID)
+				log.Printf("warning: could not find a correspondent for doc with id=%d, placeholders won't work", doc.ID)
 			}
 
 			documentType := getDocumentTypeByID(documentTypes, doc.DocumentTypeId)
 			if documentType == nil {
-				log.Printf("warning: could not find a document type for doc with id=%d", doc.ID)
+				log.Printf("warning: could not find a document type for doc with id=%d, placeholders won't work", doc.ID)
 			}
 
 			storagePath := getStoragePathByID(storagePaths, doc.StoragePath)
 			if storagePath == nil {
-				log.Printf("warning: could not find a storage path for doc with id=%d", doc.ID)
+				log.Printf("warning: could not find a storage path for doc with id=%d, placeholders won't work", doc.ID)
 			}
 
 			mailHeader := prepareMail(Config.Email.MailHeader, user, correspondent, documentType, storagePath, &doc)
@@ -152,10 +152,12 @@ func processJob() error {
 }
 
 func prepareMail(str string, user *User, correspondent *Correspondent, documenType *DocumentType, storagePath *StoragePath, document *Document) string {
-	str = strings.ReplaceAll(str, "%user_name%", user.Username)
-	str = strings.ReplaceAll(str, "%user_email%", user.Email)
-	str = strings.ReplaceAll(str, "%first_name%", user.FirstName)
-	str = strings.ReplaceAll(str, "%last_name%", user.LastName)
+	if user != nil {
+		str = strings.ReplaceAll(str, "%user_name%", user.Username)
+		str = strings.ReplaceAll(str, "%user_email%", user.Email)
+		str = strings.ReplaceAll(str, "%first_name%", user.FirstName)
+		str = strings.ReplaceAll(str, "%last_name%", user.LastName)
+	}
 
 	if correspondent != nil {
 		str = strings.ReplaceAll(str, "%correspondent_name%", correspondent.Name)
