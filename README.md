@@ -11,6 +11,7 @@ Paperless Mailservice is a simple Go application that pulls all documents marked
   - [Deployment](#deployment)
   - [Configuration](#configuration)
     - [Yaml Config Variables](#yaml-config-variables)
+    - [Placeholders for the Email Header and Body](#placeholders-for-the-email-header-and-body)
     - [Yaml Example Values](#yaml-example-values)
   - [Docker Compose](#docker-compose)
   - [Docker Image Registry](#docker-image-registry)
@@ -62,22 +63,48 @@ The project can be configured using a yaml config file named config.yaml. The fi
 
 | Type | Variable Name          | Description                                                                            | Example Value                          |
 |------|------------------------|----------------------------------------------------------------------------------------|----------------------------------------|
-| `Paperless` | `InstanceURL` | The API Endpoint of the Paperless instance. Don't forget the / at the end.             | `http://192.168.178.48:8000/api/`      |
+| `Paperless` | `InstanceURL` | The base Endpoint of the Paperless instance. Don't forget the / at the end.                   | `http://192.168.178.48:8000/`      |
 | `Paperless` | `InstanceToken` | The Paperless API Token                                                               | `9d02951f3716e098b`                    |
 | `Paperless` | `ProcessedTagName`     | The application assigns a tag to every processed document to prevent sending twice. Add the string of the tag name. | `DatevSent`                            |
 | `Paperless` | `SearchTagName`        | The tag name used for searching documents e.g. marking them for sending.                                             | `SendToDatev`                          |
 | `Paperless` | `ReceiverAddress`        | The tag name used for searching documents e.g. marking them for sending.                                             | `SendToDatev`                          |
 | `Paperless.Rules[]` | `Name`            | Custom Rule Name                                       | `OneDemoRule` |
 | `Paperless.Rules[]` | `ReceiverAddress`            | Email address of the receiver                                        | `you@get.it`                             |
+| `Paperless.Rules[]` | `MailHeader`            | A custom string that is added to the email header. If set it will overwrite the default Email.MailBody.                              | `"Custom Header - file from %first_name%"`                             |
+| `Paperless.Rules[]` | `MailBody`            | A custom string that is added to the email body. If set it will overwrite the default Email.MailBody.                              | `"Custom Hallo Text, You got a file: %document_title%"`                             |
 | `Paperless.Rules.Tags[]` | Keys            | Each Tag of that rule is one line, Tags are && linked                                        | `Invoices`                             |
 | `Email` | `SMTPServer`           | An SMTP mail server, with TLS or without                                               | `smtpServer`                           |
 | `Email` | `SMTPPort`             | Port of the SMTP mail server                                                           | `587`                                  |
 | `Email` | `SMTPConnectionType`   | SMTP Connection Type: If the Port is 587, normally starttls is correct. Otherwise tls. | `starttls` OR `tls`                                  |
 | `Email` | `SMTPUser`             | SMTP Username                                                                          | `peter`                            |
 | `Email` | `SMTPPassword`         | SMTP password                                                                          | `fQsdfsdfs`                            |
-| `Email` | `MailBody`             | A custom string that is added to the email body                                        | `You got a file ...`                   |
-| `Email` | `MailHeader`           | A custom string that is added to the email header                                      | `Header - file`                        |
+| `Email` | `MailBody`             | A string that is added to the email body                                        | `You got a file ...`                   |
+| `Email` | `MailHeader`           | A string that is added to the email header                                      | `Header - file`                        |
 | `General` | `RunEveryXMinute`      | Minutes break between every execution. -1 starts the execution once                    | `1`                                    |
+
+### Placeholders for the Email Header and Body
+
+You can use different placeholders in the Header and Body configuration values. These values ​​will be replaced for each document when it is sent.
+
+| Variable Name          | Description                                                                            |
+|------------------------|----------------------------------------------------------------------------------------|
+| `%user_id%` | The paperless Username ID by the document owner |
+| `%user_name%` | The paperless Username by the document owner |
+| `%user_email%` | The paperless Username Email Address by the document owner |
+| `%first_name%` | The First Name by the document owner |
+| `%last_name%` | The Last Name by the document owner |
+| `%correspondent_name%` | The Correspdondent Name of the document |
+| `%storage_path_id%` | The storage path ID of the document |
+| `%storage_path%` | The storage path of the document |
+| `%storage_path_name%` | The storage path name of the document |
+| `%document_id%` | The Document ID |
+| `%document_url%` | The http URL, that opens the document in paperless |
+| `%document_title%` | The Documents title |
+| `%document_type_ID%` | The Document Type ID |
+| `%document_type_name%` | The Document Type Name |
+| `%document_file_name%` | The Document Filename Name |
+| `%document_created_at%` | The Date when the document was created |
+| `%document_modified_at%` | The Date when the document was modified the last time |
 
 ### Yaml Example Values
 
@@ -85,7 +112,7 @@ Put the config.yaml file in the ./config/ folder. It will be consumed automatica
 
 ```yaml
 Paperless:
-  InstanceURL: http://192.168.178.48:8000/api/
+  InstanceURL: http://192.168.178.48:8000/
   InstanceToken: 9d02951f3716e098b
   ProcessedTagName: DatevSent
   AddQueueTagName: SendToDatev
@@ -100,6 +127,9 @@ Paperless:
       Tags: # You can create mutiple rules for a Tag combination to send the doc to different receivers
         - OfflineDocs
       ReceiverAddress: dont@get.it
+      #If Header and/or Body are set, the base Email.MailBody and/or Email.MailHeader will be overwritten.
+      MailBody: "Custom Body for that rule - %first_name%"
+      MailHeader: "Custom Header for that rule - %document_id%"
 Email:
   SMTPAddress: bla@foo.bar
   SMTPServer: mail.com
@@ -107,8 +137,8 @@ Email:
   SMTPConnectionType: starttls
   SMTPUser: bla@foo.bar
   SMTPPassword: fQsdfsdfs
-  MailBody: You got a file ...
-  MailHeader: You got a file
+  MailBody: "You got a file ...with some values %document_file_name%, %document_created_at%"
+  MailHeader: "You got a file - %document_file_name%"
 RunEveryXMinute: 1
 ```
 
