@@ -11,6 +11,7 @@ Paperless Mailservice is a simple Go application that pulls all documents marked
   - [Deployment](#deployment)
   - [Configuration](#configuration)
     - [Yaml Config Variables](#yaml-config-variables)
+    - [Placeholders for the Email Header and Body](#placeholders-for-the-email-header-and-body)
     - [Yaml Example Values](#yaml-example-values)
   - [Docker Compose](#docker-compose)
   - [Docker Image Registry](#docker-image-registry)
@@ -79,6 +80,26 @@ The project can be configured using a yaml config file named config.yaml. The fi
 | `Email` | `MailHeader`           | A custom string that is added to the email header                                      | `Header - file`                        |
 | `General` | `RunEveryXMinute`      | Minutes break between every execution. -1 starts the execution once                    | `1`                                    |
 
+### Placeholders for the Email Header and Body
+
+You can use different placeholders in the Header and Body configuration values. These values ​​will be replaced for each document when it is sent.
+
+| Variable Name          | Description                                                                            |
+|------------------------|----------------------------------------------------------------------------------------|
+| `%user_name%` | The paperless Username by the document owner |
+| `%user_email%` | The paperless Username Email Address by the document owner |
+| `%first_name%` | The First Name by the document owner |
+| `%last_name%` | The Last Name by the document owner |
+| `%correspondent_name%` | The Correspdondent Name of the document |
+| `%storage_path%` | The storage path of the document |
+| `%storage_path_name%` | The storage path name of the document |
+| `%document_id%` | The Document Id |
+| `%document_title%` | The Documents title |
+| `%document_type_name%` | The Document Type Name |
+| `%document_file_name%` | The Document Filename Name |
+| `%document_created_at%` | The Date when the document was created |
+| `%document_modified_at%` | The Date when the document was modified the last time |
+
 ### Yaml Example Values
 
 Put the config.yaml file in the ./config/ folder. It will be consumed automatically on container start. Here is an example of how the `config.yaml` file should look like:
@@ -107,8 +128,8 @@ Email:
   SMTPConnectionType: starttls
   SMTPUser: bla@foo.bar
   SMTPPassword: fQsdfsdfs
-  MailBody: You got a file ...
-  MailHeader: You got a file
+  MailBody: "You got a file ...with some values %document_file_name%, %document_created_at%"
+  MailHeader: "You got a file - %document_file_name%"
 RunEveryXMinute: 1
 ```
 

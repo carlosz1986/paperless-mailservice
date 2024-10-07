@@ -22,5 +22,6 @@ Email:
   SMTPUser: bla@foo.bar
   SMTPPassword: fQsdfsdfs
   MailBody: You got a file ...
-  MailHeader: You got a file
+  MailBody: "You got a file ...with some values %user_name%, %user_email%, %first_name%, %last_name%, %correspondent_name%, %document_id%, %document_type_name%, %document_title%, %storage_path%, %storage_path_name%, %document_file_name%, %document_created_at%, %document_modified_at%"
+  MailHeader: "You got a file - %document_file_name%"
 RunEveryXMinute: 1
