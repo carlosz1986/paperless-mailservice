@@ -17,10 +17,19 @@ import (
 )
 
 type Document struct {
-	ID       int    `json:"id"`
-	Title    string `json:"title"`
-	FileName string `json:"archived_file_name"`
-	TagIDs   []int  `json:"tags"`
+	ID               int    `json:"id"`
+	Title            string `json:"title"`
+	FileName         string `json:"archived_file_name"`
+	OriginalFileName string `json:"original_file_name"`
+	TagIDs           []int  `json:"tags"`
+}
+
+// getFileName returns the archived filename. For encrypted files it uses the original name.
+func (d *Document) getFileName() string {
+	if d.FileName != "" {
+		return d.FileName
+	}
+	return d.OriginalFileName
 }
 
 type Tag struct {
@@ -110,17 +119,17 @@ func processJob() error {
 				continue
 			}
 			// found a rule that matches, start processing
-			log.Printf("found Rule: %s, that matches Tag(s) (%s) in document: '%s' (%d)", rule.Name, strings.Join(rule.Tags, ","), doc.FileName, doc.ID)
+			log.Printf("found Rule: %s, that matches Tag(s) (%s) in document: '%s' (%d)", rule.Name, strings.Join(rule.Tags, ","), doc.getFileName(), doc.ID)
 
 			if err := SendProcessDoc(doc, processedTag, rule.ReceiverAddress); err != nil {
 				log.Printf("error processing Doc: %v", err)
 				continue
 			}
 
-			log.Printf("document '%s' (%d) succesfully sent to '%s'", doc.FileName, doc.ID, rule.ReceiverAddress)
+			log.Printf("document '%s' (%d) succesfully sent to '%s'", doc.getFileName(), doc.ID, rule.ReceiverAddress)
 			goto nextDoc
 		}
-		log.Printf("document '%s' (%d) marked for processing, but no Ruleset matches the tags ...", doc.FileName, doc.ID)
+		log.Printf("document '%s' (%d) marked for processing, but no Ruleset matches the tags ...", doc.getFileName(), doc.ID)
 	nextDoc:
 	}
 
@@ -131,10 +140,10 @@ func SendProcessDoc(doc Document, processedTag *Tag, receiverAddress string) err
 	// download document
 	bytes, err := downloadDocumentBinary(doc)
 	if err != nil {
-		return fmt.Errorf("failed to download document: '%s' (%d): %v", doc.FileName, doc.ID, err)
+		return fmt.Errorf("failed to download document: '%s' (%d): %v", doc.getFileName(), doc.ID, err)
 	}
 
-	log.Printf("downloaded document: '%s' (%d)", doc.FileName, doc.ID)
+	log.Printf("downloaded document: '%s' (%d)", doc.getFileName(), doc.ID)
 
 	// found right rule, send it
 	err = SendEmailWithPDFBinaryAttachment(Config.Email.SMTPServer,
@@ -146,7 +155,7 @@ func SendProcessDoc(doc Document, processedTag *Tag, receiverAddress string) err
 		receiverAddress,
 		Config.Email.MailHeader,
 		Config.Email.MailBody,
-		doc.FileName,
+		doc.getFileName(),
 		bytes)
 
 	if err != nil {
@@ -155,7 +164,7 @@ func SendProcessDoc(doc Document, processedTag *Tag, receiverAddress string) err
 
 	err = addTagToDocument(doc, *processedTag)
 	if err != nil {
-		return fmt.Errorf("could not add Tag for document '%s' (%d): %v", doc.FileName, doc.ID, err)
+		return fmt.Errorf("could not add Tag for document '%s' (%d): %v", doc.getFileName(), doc.ID, err)
 	}
 	return nil
 }
