@@ -1,5 +1,5 @@
 Paperless:
-  InstanceURL: http://192.168.178.48:8000/api/
+  InstanceURL: http://192.168.178.48:8000/
   InstanceToken: 9d02951f3716e098b
   ProcessedTagName: DatevSent
   AddQueueTagName: SendToDatev
@@ -14,6 +14,9 @@ Paperless:
     Tags: # You can create mutiple rules for a Tag combination to send the doc to different receivers
         - OfflineDocs
       ReceiverAddress: dont@get.it
+      #If Header and/or Body are set, the base Mail.Body and/or Mail.Header will be overwritten.
+      MailBody: "Custom SuperBody %first_name%"
+      MailHeader: "Custom Header for %document_id%"
 Email:
   SMTPAddress: bla@foo.bar
   SMTPServer: mail.com
@@ -21,6 +24,6 @@ Email:
   SMTPConnectionType: starttls
   SMTPUser: bla@foo.bar
   SMTPPassword: fQsdfsdfs
-  MailBody: You got a file ...
-  MailHeader: You got a file
+  MailBody: "You got a file ...with some values %user_id%, %user_name%, %user_email%, %first_name%, %last_name%, %correspondent_name%, %document_id%, %document_url%, %document_type_id%, %document_type_name%, %document_title%, %storage_path%, %storage_path_id%, %storage_path_name%, %document_file_name%, %document_created_at%, %document_modified_at%"
+  MailHeader: "You got a file - %document_file_name%"
 RunEveryXMinute: 1

@@ -23,6 +23,8 @@ type config struct {
 		Rules            []struct {
 			Name            string `validate:"required"`
 			ReceiverAddress string `validate:"required,email"`
+			MailBody        string
+			MailHeader      string
 			Tags            []string
 		}
 	}
