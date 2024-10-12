@@ -133,8 +133,8 @@ func processJob() error {
 				log.Printf("warning: could not find a storage path for doc with id=%d, placeholders won't work", doc.ID)
 			}
 
-			mailHeader := prepareMail(Config.Email.MailHeader, user, correspondent, documentType, storagePath, &doc)
-			mailBody := prepareMail(Config.Email.MailBody, user, correspondent, documentType, storagePath, &doc)
+			mailHeader := prepareMail(Config.Email.MailHeader, rule.MailHeader, user, correspondent, documentType, storagePath, &doc)
+			mailBody := prepareMail(Config.Email.MailBody, rule.MailBody, user, correspondent, documentType, storagePath, &doc)
 
 			if err := SendProcessDoc(doc, processedTag, mailHeader, mailBody, rule.ReceiverAddress); err != nil {
 				log.Printf("error processing Doc: %v", err)
@@ -151,9 +151,15 @@ func processJob() error {
 	return nil
 }
 
-func prepareMail(str string, user *User, correspondent *Correspondent, documenType *DocumentType, storagePath *StoragePath, document *Document) string {
+func prepareMail(str, ruleStr string, user *User, correspondent *Correspondent, documenType *DocumentType, storagePath *StoragePath, document *Document) string {
+	// use the header,body string from rule if set
+	if ruleStr != "" {
+		str = ruleStr
+	}
+
 	if user != nil {
 		str = strings.ReplaceAll(str, "%user_name%", user.Username)
+		str = strings.ReplaceAll(str, "%user_id%", strconv.Itoa(user.ID))
 		str = strings.ReplaceAll(str, "%user_email%", user.Email)
 		str = strings.ReplaceAll(str, "%first_name%", user.FirstName)
 		str = strings.ReplaceAll(str, "%last_name%", user.LastName)
@@ -161,18 +167,24 @@ func prepareMail(str string, user *User, correspondent *Correspondent, documenTy
 
 	if correspondent != nil {
 		str = strings.ReplaceAll(str, "%correspondent_name%", correspondent.Name)
+		str = strings.ReplaceAll(str, "%correspondent_id%", strconv.Itoa(correspondent.ID))
+
 	}
 
 	if documenType != nil {
 		str = strings.ReplaceAll(str, "%document_type_name%", documenType.Name)
+		str = strings.ReplaceAll(str, "%document_type_id%", strconv.Itoa(documenType.ID))
+
 	}
 
 	if storagePath != nil {
 		str = strings.ReplaceAll(str, "%storage_path_name%", storagePath.Name)
+		str = strings.ReplaceAll(str, "%storage_path_id%", strconv.Itoa(storagePath.ID))
 		str = strings.ReplaceAll(str, "%storage_path%", storagePath.Path)
 	}
 
 	str = strings.ReplaceAll(str, "%document_id%", strconv.Itoa(document.ID))
+	str = strings.ReplaceAll(str, "%document_url%", document.getDocumentURL())
 	str = strings.ReplaceAll(str, "%document_title%", document.Title)
 	str = strings.ReplaceAll(str, "%document_file_name%", document.getFileName())
 	str = strings.ReplaceAll(str, "%document_created_at%", document.CreatedAt)

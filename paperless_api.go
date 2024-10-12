@@ -31,6 +31,11 @@ func (d *Document) getFileName() string {
 	return d.OriginalFileName
 }
 
+// getDocumentURL returns the Url to the document inside Paperless
+func (d *Document) getDocumentURL() string {
+	return fmt.Sprintf("%sdocuments/%d/details", Config.Paperless.InstanceURL, d.ID)
+}
+
 // Tag represents a paperless Tag
 type Tag struct {
 	ID   int    `json:"id"`
@@ -90,7 +95,7 @@ func getCorrespondents() ([]Correspondent, error) {
 	page := 1
 
 	for {
-		resp, err := getRequest(fmt.Sprintf("%scorrespondents/?page=%d", Config.Paperless.InstanceURL, page))
+		resp, err := getRequest(fmt.Sprintf("%sapi/correspondents/?page=%d", Config.Paperless.InstanceURL, page))
 		if err != nil {
 			return nil, fmt.Errorf("failed to fetch correspondents: %v", err)
 		}
@@ -122,7 +127,7 @@ func getDocumentTypes() ([]DocumentType, error) {
 	page := 1
 
 	for {
-		resp, err := getRequest(fmt.Sprintf("%sdocument_types/?page=%d", Config.Paperless.InstanceURL, page))
+		resp, err := getRequest(fmt.Sprintf("%sapi/document_types/?page=%d", Config.Paperless.InstanceURL, page))
 		if err != nil {
 			return nil, fmt.Errorf("failed to fetch document types: %v", err)
 		}
@@ -154,7 +159,7 @@ func getStoragePaths() ([]StoragePath, error) {
 	page := 1
 
 	for {
-		resp, err := getRequest(fmt.Sprintf("%sstorage_paths/?page=%d", Config.Paperless.InstanceURL, page))
+		resp, err := getRequest(fmt.Sprintf("%sapi/storage_paths/?page=%d", Config.Paperless.InstanceURL, page))
 		if err != nil {
 			return nil, fmt.Errorf("failed to fetch storage paths: %v", err)
 		}
@@ -186,7 +191,7 @@ func getUsers() ([]User, error) {
 	page := 1
 
 	for {
-		resp, err := getRequest(fmt.Sprintf("%susers/?page=%d", Config.Paperless.InstanceURL, page))
+		resp, err := getRequest(fmt.Sprintf("%sapi/users/?page=%d", Config.Paperless.InstanceURL, page))
 		if err != nil {
 			return nil, fmt.Errorf("failed to fetch users: %v", err)
 		}
@@ -218,7 +223,7 @@ func getTags() ([]Tag, error) {
 	page := 1
 
 	for {
-		resp, err := getRequest(fmt.Sprintf("%stags/?page=%d", Config.Paperless.InstanceURL, page))
+		resp, err := getRequest(fmt.Sprintf("%sapi/tags/?page=%d", Config.Paperless.InstanceURL, page))
 		if err != nil {
 			return nil, fmt.Errorf("failed to fetch tags: %v", err)
 		}
@@ -250,7 +255,7 @@ func getDocumentsByTag(tag Tag, processedTag Tag) ([]Document, error) {
 	page := 1
 
 	for {
-		resp, err := getRequest(fmt.Sprintf("%sdocuments/?page=%d&tags__id__all=%d&tags__id__none=%d", Config.Paperless.InstanceURL, page, tag.ID, processedTag.ID))
+		resp, err := getRequest(fmt.Sprintf("%sapi/documents/?page=%d&tags__id__all=%d&tags__id__none=%d", Config.Paperless.InstanceURL, page, tag.ID, processedTag.ID))
 		if err != nil {
 			return nil, fmt.Errorf("failed to fetch documents: %v", err)
 		}
@@ -278,7 +283,7 @@ func getDocumentsByTag(tag Tag, processedTag Tag) ([]Document, error) {
 }
 
 func addTagToDocument(document Document, tag Tag) error {
-	url := fmt.Sprintf("%sdocuments/bulk_edit/", Config.Paperless.InstanceURL)
+	url := fmt.Sprintf("%sapi/documents/bulk_edit/", Config.Paperless.InstanceURL)
 
 	type payload struct {
 		Documents  []int          `json:"documents"`
@@ -323,7 +328,7 @@ func addTagToDocument(document Document, tag Tag) error {
 }
 
 func downloadDocumentBinary(doc Document) ([]byte, error) {
-	url := fmt.Sprintf("%sdocuments/%d/download/", Config.Paperless.InstanceURL, doc.ID)
+	url := fmt.Sprintf("%sapi/documents/%d/download/", Config.Paperless.InstanceURL, doc.ID)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
