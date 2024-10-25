@@ -351,12 +351,37 @@ func getTagByName(tags []Tag, name string) *Tag {
 	return nil
 }
 
+func toQuotedPrintable(s string) (string, error) {
+	var ac bytes.Buffer
+	w := quotedprintable.NewWriter(&ac)
+
+	if _, err := w.Write([]byte(s)); err != nil {
+		return "", err
+	}
+	if err := w.Close(); err != nil {
+		return "", err
+	}
+
+	return ac.String(), nil
+}
+
 func SendEmailWithPDFBinaryAttachment(smtpHost, smtpPort, connectionType, sender, user, password, recipient, subject, body, filename string, attachment []byte) error {
+	// subject,body to quoted printable
+	subjectP, err := toQuotedPrintable(subject)
+	if err != nil {
+		return err
+	}
+
+	bodyP, err := toQuotedPrintable(body)
+	if err != nil {
+		return err
+	}
+
 	// Create the email header
 	header := make(map[string]string)
 	header["From"] = sender
 	header["To"] = recipient
-	header["Subject"] = subject
+	header["Subject"] = fmt.Sprintf("=?UTF-8?q?%s?=", subjectP)
 	header["MIME-Version"] = "1.0"
 	header["Content-Type"] = `multipart/mixed; boundary="BOUNDARY"`
 	header["Date"] = time.Now().Format(time.RFC1123Z)
@@ -368,23 +393,17 @@ func SendEmailWithPDFBinaryAttachment(smtpHost, smtpPort, connectionType, sender
 	emailBuf.WriteString("\r\n--BOUNDARY\r\n")
 
 	// Create the body part
-	emailBuf.WriteString(`Content-Type: text/plain; charset="utf-8"` + "\r\n")
+	emailBuf.WriteString(fmt.Sprintf(`Content-Type: text/plain; charset="UTF-8"; boundary="BOUNDARY"%s`, "\r\n"))
 	emailBuf.WriteString("Content-Transfer-Encoding: quoted-printable\r\n\r\n")
 
 	// write the email body to the buffer
-	qp := quotedprintable.NewWriter(&emailBuf)
-	_, err := qp.Write([]byte(body))
-	if err != nil {
-		return fmt.Errorf("unable to write body: %v", err)
-	}
-	qp.Close()
-
+	emailBuf.WriteString(bodyP)
 	emailBuf.WriteString("\r\n--BOUNDARY\r\n")
 
 	// Create the attachment part
-	emailBuf.WriteString(fmt.Sprintf(`Content-Type: application/pdf; name="%s"`+"\r\n", filename))
+	emailBuf.WriteString(fmt.Sprintf(`Content-Type: application/pdf; name="%s"%s`, filename, "\r\n"))
 	emailBuf.WriteString("Content-Transfer-Encoding: base64\r\n")
-	emailBuf.WriteString(fmt.Sprintf(`Content-Disposition: attachment; filename="%s"`+"\r\n\r\n", filename))
+	emailBuf.WriteString(fmt.Sprintf(`Content-Disposition: attachment; filename="%s"%s`, filename, "\r\n\r\n"))
 
 	b := make([]byte, base64.StdEncoding.EncodedLen(len(attachment)))
 	base64.StdEncoding.Encode(b, attachment)
