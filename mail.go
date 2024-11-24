@@ -13,6 +13,7 @@ import (
 func toQuotedPrintable(s string) (string, error) {
 	var ac bytes.Buffer
 	w := quotedprintable.NewWriter(&ac)
+	defer w.Close()
 
 	if _, err := w.Write([]byte(s)); err != nil {
 		return "", err
@@ -41,28 +42,29 @@ func SendEmailWithPDFBinaryAttachment(smtpHost, smtpPort, connectionType, sender
 	header := make(map[string]string)
 	header["From"] = sender
 	header["To"] = recipient
-	header["Subject"] = fmt.Sprintf("=?UTF-8?q?%s?=", subjectP)
+	header["Subject"] = fmt.Sprintf("=?UTF-8?Q?%s?=", subjectP)
 	header["MIME-Version"] = "1.0"
 	header["Content-Type"] = `multipart/mixed; boundary="BOUNDARY"`
 	header["Date"] = time.Now().Format(time.RFC1123Z)
 
 	var emailBuf bytes.Buffer
 	for k, v := range header {
-		emailBuf.WriteString(fmt.Sprintf("%s: %s\r\n", k, v))
+		emailBuf.WriteString(fmt.Sprintf("%s: %s%s", k, v, "\r\n"))
 	}
-	emailBuf.WriteString("\r\n--BOUNDARY\r\n")
+	emailBuf.WriteString(fmt.Sprintf(`%s--BOUNDARY%s`, "\r\n", "\r\n"))
 
 	// Create the body part
-	emailBuf.WriteString(fmt.Sprintf(`Content-Type: text/plain; charset="UTF-8"; boundary="BOUNDARY"%s`, "\r\n"))
-	emailBuf.WriteString("Content-Transfer-Encoding: quoted-printable\r\n\r\n")
+	emailBuf.WriteString(fmt.Sprintf(`Content-Type: text/html; charset=UTF-8%s`, "\r\n"))
+	emailBuf.WriteString(fmt.Sprintf(`Content-Transfer-Encoding: quoted-printable%s`, "\r\n\r\n"))
 
 	// write the email body to the buffer
 	emailBuf.WriteString(bodyP)
-	emailBuf.WriteString("\r\n--BOUNDARY\r\n")
+
+	emailBuf.WriteString(fmt.Sprintf(`%s--BOUNDARY%s`, "\r\n", "\r\n"))
 
 	// Create the attachment part
 	emailBuf.WriteString(fmt.Sprintf(`Content-Type: application/pdf; name="%s"%s`, filename, "\r\n"))
-	emailBuf.WriteString("Content-Transfer-Encoding: base64\r\n")
+	emailBuf.WriteString(fmt.Sprintf(`Content-Transfer-Encoding: base64%s`, "\r\n"))
 	emailBuf.WriteString(fmt.Sprintf(`Content-Disposition: attachment; filename="%s"%s`, filename, "\r\n\r\n"))
 
 	b := make([]byte, base64.StdEncoding.EncodedLen(len(attachment)))
@@ -72,7 +74,7 @@ func SendEmailWithPDFBinaryAttachment(smtpHost, smtpPort, connectionType, sender
 		return fmt.Errorf("failed to add line separators to BinaryFile: %v", err)
 	}
 
-	emailBuf.WriteString("\r\n--BOUNDARY--")
+	emailBuf.WriteString(fmt.Sprintf(`%s--BOUNDARY--`, "\r\n"))
 
 	addr := fmt.Sprintf("%s:%s", smtpHost, smtpPort)
 	auth := smtp.PlainAuth("", user, password, smtpHost)

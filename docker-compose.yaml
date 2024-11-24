@@ -3,7 +3,7 @@ services:
     build:
       dockerfile: Dockerfile
       context: .
-    image: carlosz1986/paperless-mailservice:1.6
+    image: carlosz1986/paperless-mailservice:1.9
     volumes:
       - .:/app
       - ./config:/config
