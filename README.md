@@ -70,16 +70,16 @@ The project can be configured using a yaml config file named config.yaml. The fi
 | `Paperless` | `ReceiverAddress`        | The tag name used for searching documents e.g. marking them for sending.                                             | `SendToDatev`                          |
 | `Paperless.Rules[]` | `Name`            | Custom Rule Name                                       | `OneDemoRule` |
 | `Paperless.Rules[]` | `ReceiverAddress`            | Email address of the receiver                                        | `you@get.it`                             |
-| `Paperless.Rules[]` | `MailHeader`            | A custom string that is added to the email header. If set it will overwrite the default Email.MailBody.                              | `"Custom Header - file from %first_name%"`                             |
-| `Paperless.Rules[]` | `MailBody`            | A custom string that is added to the email body. If set it will overwrite the default Email.MailBody.                              | `"Custom Hallo Text, You got a file: %document_title%"`                             |
+| `Paperless.Rules[]` | `MailHeader`            | A custom string that is added to the email header. If set it will overwrite the default Email.MailHeader.                              | `"Custom Header - file from %first_name%"`                             |
+| `Paperless.Rules[]` | `MailBody`            | A custom string that is added to the email body.MailBody. If set it will overwrite the default Email.MailBody. HTML tags are supported.                              | `"You got a file: %document_title%. Open it <a href='%document_url%'>%document_id%</a>"`                             |
 | `Paperless.Rules.Tags[]` | Keys            | Each Tag of that rule is one line, Tags are && linked                                        | `Invoices`                             |
 | `Email` | `SMTPServer`           | An SMTP mail server, with TLS or without                                               | `smtpServer`                           |
 | `Email` | `SMTPPort`             | Port of the SMTP mail server                                                           | `587`                                  |
 | `Email` | `SMTPConnectionType`   | SMTP Connection Type: If the Port is 587, normally starttls is correct. Otherwise tls. | `starttls` OR `tls`                                  |
 | `Email` | `SMTPUser`             | SMTP Username                                                                          | `peter`                            |
 | `Email` | `SMTPPassword`         | SMTP password                                                                          | `fQsdfsdfs`                            |
-| `Email` | `MailBody`             | A string that is added to the email body                                        | `You got a file ...`                   |
-| `Email` | `MailHeader`           | A string that is added to the email header                                      | `Header - file`                        |
+| `Email` | `MailBody`             | A string that is added to the email body. HTML tags are supported.                     | `You got a file ...`                   |
+| `Email` | `MailHeader`           | A string that is added to the email header.                                      | `Header - file`                        |
 | `General` | `RunEveryXMinute`      | Minutes break between every execution. -1 starts the execution once                    | `1`                                    |
 
 ### Placeholders for the Email Header and Body
