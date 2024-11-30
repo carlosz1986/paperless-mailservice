@@ -16,11 +16,12 @@ var Config config
 // Struct for config validation using go-playground/validator
 type config struct {
 	Paperless struct {
-		InstanceURL      string `validate:"required,url"`
-		InstanceToken    string `validate:"required"`
-		AddQueueTagName  string `validate:"required"`
-		ProcessedTagName string `validate:"required"`
-		Rules            []struct {
+		InstanceURL             string `validate:"required,url"`
+		InstanceToken           string `validate:"required"`
+		AddQueueTagName         string `validate:"required"`
+		ProcessedTagName        string `validate:"required"`
+		UseCustomFilenameFormat bool
+		Rules                   []struct {
 			Name            string `validate:"required"`
 			ReceiverAddress string `validate:"required,email"`
 			MailBody        string
@@ -44,10 +45,11 @@ type config struct {
 // validateConfigKeys function to validate required keys
 func validateConfigKeys() error {
 	typeValidations := map[string]string{
-		"Paperless.InstanceURL":      "string",
-		"Paperless.InstanceToken":    "string",
-		"Paperless.AddQueueTagName":  "string",
-		"Paperless.ProcessedTagName": "string",
+		"Paperless.InstanceURL":             "string",
+		"Paperless.InstanceToken":           "string",
+		"Paperless.AddQueueTagName":         "string",
+		"Paperless.ProcessedTagName":        "string",
+		"Paperless.UseCustomFilenameFormat": "bool",
 		// todo Rules
 		"Email.SMTPAddress":        "string",
 		"Email.SMTPServer":         "string",
