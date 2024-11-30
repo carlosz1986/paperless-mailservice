@@ -3,6 +3,7 @@ Paperless:
   InstanceToken: 9d02951f3716e098b
   ProcessedTagName: DatevSent
   AddQueueTagName: SendToDatev
+  UseCustomFilenameFormat: false
   Rules:
     - Name: "OneDemoRule"
       Tags: #The Doc must hold all three tags 
@@ -22,7 +23,7 @@ Paperless:
       BCCAddresses:
         - bcc@issupported.com
       #If Header and/or Body are set, the base Mail.Body and/or Mail.Header will be overwritten.
-      MailBody: "Custom SuperBody %first_name%"
+      MailBody: "Custom SuperBody %first_name% with a html link <a href="%document_url%">%document_id%</a>"
       MailHeader: "Custom Header for %document_id%"
 Email:
   SMTPAddress: bla@foo.bar
