@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"mime/quotedprintable"
 	"net/smtp"
+	"strings"
 	"time"
 )
 
@@ -25,14 +26,40 @@ func toQuotedPrintable(s string) (string, error) {
 	return ac.String(), nil
 }
 
+// createSubject adds correct line breaks and encodes to quoted printable
+func createSubject(s string) (string, error) {
+	partP, err := toQuotedPrintable(s)
+	if err != nil {
+		return "", err
+	}
+	lines := strings.Split(partP, "\r\n")
+
+	var out string
+
+	for i, part := range lines {
+		if i > 0 {
+			// seperate every chunk with space
+			out += " "
+		}
+		out += fmt.Sprintf("%s%s%s", "=?UTF-8?Q?", part, "?=")
+
+		// last line of the subject has no line break, as this is added to each header later anyway
+		if i < len(lines)-1 {
+			out += "\r\n"
+		}
+	}
+	return out, nil
+}
+
 // SendEmailWithPDFBinaryAttachment sends email with pdf Binary attachment
 func SendEmailWithPDFBinaryAttachment(smtpHost, smtpPort, connectionType, sender, user, password, recipient, subject, body, filename string, attachment []byte) error {
-	// subject,body to quoted printable
-	subjectP, err := toQuotedPrintable(subject)
+	// create quoted printable with correct line breaks for the subject
+	subjectP, err := createSubject(subject)
 	if err != nil {
 		return err
 	}
 
+	// body to quoted printable
 	bodyP, err := toQuotedPrintable(body)
 	if err != nil {
 		return err
@@ -42,7 +69,7 @@ func SendEmailWithPDFBinaryAttachment(smtpHost, smtpPort, connectionType, sender
 	header := make(map[string]string)
 	header["From"] = sender
 	header["To"] = recipient
-	header["Subject"] = fmt.Sprintf("=?UTF-8?Q?%s?=", subjectP)
+	header["Subject"] = subjectP
 	header["MIME-Version"] = "1.0"
 	header["Content-Type"] = `multipart/mixed; boundary="BOUNDARY"`
 	header["Date"] = time.Now().Format(time.RFC1123Z)
