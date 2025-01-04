@@ -88,7 +88,7 @@ func processJob() error {
 		atLeastOneRuleMatches := false
 
 		for _, rule := range Config.Paperless.Rules {
-			docMatchesRule := false
+			docMatchesRuleTag, docMatchesRuleCorrespondent, docMatchesRuleType := false, false, false
 			for _, ruleTag := range rule.Tags {
 				foundDocTag := false
 				for _, id := range doc.TagIDs {
@@ -101,14 +101,41 @@ func processJob() error {
 						foundDocTag = true
 					}
 				}
+
 				if foundDocTag {
-					docMatchesRule = true
+					docMatchesRuleTag = true
 				} else {
-					docMatchesRule = false
+					docMatchesRuleTag = false
 					break
 				}
+
+				// check if correspondents are matching
+				// if correspondent is set in rule, but does not match skip the doc for that rule
+				// if correspondent is not set in rule, proceed
+				docCorrespondent := getCorrespondentByID(correspondents, doc.CorrespondentId)
+				if docCorrespondent != nil && rule.Correspondent == docCorrespondent.Name {
+					docMatchesRuleCorrespondent = true
+				} else if rule.Correspondent == "" {
+					docMatchesRuleCorrespondent = true
+				} else {
+					docMatchesRuleCorrespondent = false
+				}
+
+				// check if types are matching
+				// if type is set in rule, but does not match skip the doc for that rule
+				// if type is not set in rule, proceed
+				docType := getDocumentTypeByID(documentTypes, doc.DocumentTypeId)
+				if docType != nil && rule.Type == docType.Name {
+					docMatchesRuleType = true
+				} else if rule.Type == "" {
+					docMatchesRuleType = true
+				} else {
+					docMatchesRuleType = false
+				}
+
 			}
-			if !docMatchesRule {
+			// tags and correspondent + type (if set) need to match
+			if !(docMatchesRuleTag && docMatchesRuleCorrespondent && docMatchesRuleType) {
 				// if the rule does not match, try next rule
 				continue
 			}

@@ -26,6 +26,8 @@ type config struct {
 			MailBody        string
 			MailHeader      string
 			Tags            []string
+			Type            string
+			Correspondent   string
 		}
 	}
 	Email struct {
@@ -48,7 +50,7 @@ func validateConfigKeys() error {
 		"Paperless.InstanceToken":    "string",
 		"Paperless.AddQueueTagName":  "string",
 		"Paperless.ProcessedTagName": "string",
-		// todo Rules
+		// todo Rules, Correspodent, Type
 		"Email.SMTPAddress":        "string",
 		"Email.SMTPServer":         "string",
 		"Email.SMTPPort":           "int",
