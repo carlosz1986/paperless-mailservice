@@ -73,6 +73,8 @@ The project can be configured using a yaml config file named config.yaml. The fi
 | `Paperless.Rules[]` | `MailHeader`            | A custom string that is added to the email header. If set it will overwrite the default Email.MailHeader.                              | `"Custom Header - file from %first_name%"`                             |
 | `Paperless.Rules[]` | `MailBody`            | A custom string that is added to the email body.MailBody. If set it will overwrite the default Email.MailBody. HTML tags are supported.                              | `"You got a file: %document_title%. Open it <a href='%document_url%'>%document_id%</a>"`                             |
 | `Paperless.Rules.Tags[]` | Keys            | Each Tag of that rule is one line, Tags are && linked                                        | `Invoices`                             |
+| `Paperless.Rules[]` | `Correspondent`            | If set the Correspondent of the document must match.                         | `Company`                             |
+| `Paperless.Rules[]` | `Type`          | If set the Type of the document must match.                                        | `Creditnote`                             |
 | `Email` | `SMTPServer`           | An SMTP mail server, with TLS or without                                               | `smtpServer`                           |
 | `Email` | `SMTPPort`             | Port of the SMTP mail server                                                           | `587`                                  |
 | `Email` | `SMTPConnectionType`   | SMTP Connection Type: If the Port is 587, normally starttls is correct. Otherwise tls. | `starttls` OR `tls`                                  |
@@ -122,6 +124,8 @@ Paperless:
         - Seaside Docs
         - Invoices
         - Foobar
+      Correspondent: Firma  #If you use Correspondent or Type - The doc has to match Tags, Correspondent and Type... 
+      Type: "Invoice"
       ReceiverAddress: you@get.it
     - Name: "TwoDemoRule"
       Tags: # You can create mutiple rules for a Tag combination to send the doc to different receivers
