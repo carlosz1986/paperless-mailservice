@@ -68,13 +68,12 @@ func processJob() error {
 
 	searchTag := getTagByName(tags, Config.Paperless.AddQueueTagName)
 	if searchTag == nil {
-		return fmt.Errorf("error finding searchTagName:%s in list from from server", Config.Paperless.AddQueueTagName, err)
+		return fmt.Errorf("error finding searchTagName:%s in list from from server", Config.Paperless.AddQueueTagName)
 	}
 
 	documents, err := getDocumentsByTag(*searchTag, *processedTag)
 	if err != nil {
-		fmt.Errorf("error getting documents with tag: %v", err)
-		return err
+		return fmt.Errorf("error getting documents with tag: %v", err)
 	}
 
 	if len(documents) == 0 {
@@ -165,12 +164,20 @@ func processJob() error {
 			mailHeader := prepareMail(Config.Email.MailHeader, rule.MailHeader, user, correspondent, documentType, storagePath, &doc)
 			mailBody := prepareMail(Config.Email.MailBody, rule.MailBody, user, correspondent, documentType, storagePath, &doc)
 
-			if err := SendProcessDoc(doc, processedTag, mailHeader, mailBody, rule.ReceiverAddress); err != nil {
+			if err := SendProcessDoc(doc, processedTag, mailHeader, mailBody, rule.BCCAddresses, rule.ReceiverAddresses); err != nil {
 				log.Printf("error processing Doc: %v", err)
 				continue
 			}
-
-			log.Printf("document '%s' (%d) succesfully sent to '%s'", doc.getFileName(), doc.ID, rule.ReceiverAddress)
+			if len(rule.BCCAddresses) > 0 {
+				log.Printf("document '%s' (%d) successfully sent to '%s' and BCC to '%s'",
+					doc.getFileName(), doc.ID,
+					strings.Join(rule.ReceiverAddresses, ","),
+					strings.Join(rule.BCCAddresses, ","))
+			} else {
+				log.Printf("document '%s' (%d) successfully sent to '%s'",
+					doc.getFileName(), doc.ID,
+					strings.Join(rule.ReceiverAddresses, ","))
+			}
 			atLeastOneRuleMatches = true
 			//goto nextDoc
 		}
@@ -225,7 +232,7 @@ func prepareMail(str, ruleStr string, user *User, correspondent *Correspondent, 
 	return str
 }
 
-func SendProcessDoc(doc Document, processedTag *Tag, mailHeader, mailBody, receiverAddress string) error {
+func SendProcessDoc(doc Document, processedTag *Tag, mailHeader, mailBody string, BCCAddresses, ReceiverAddresses []string) error {
 	// download document
 	bytes, err := downloadDocumentBinary(doc)
 	if err != nil {
@@ -241,10 +248,11 @@ func SendProcessDoc(doc Document, processedTag *Tag, mailHeader, mailBody, recei
 		Config.Email.SMTPAddress,
 		Config.Email.SMTPUser,
 		Config.Email.SMTPPassword,
-		receiverAddress,
 		mailHeader,
 		mailBody,
 		doc.getFileName(),
+		BCCAddresses,
+		ReceiverAddresses,
 		bytes)
 
 	if err != nil {

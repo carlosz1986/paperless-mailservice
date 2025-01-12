@@ -66,13 +66,13 @@ The project can be configured using a yaml config file named config.yaml. The fi
 | `Paperless` | `InstanceURL` | The base Endpoint of the Paperless instance. Don't forget the / at the end.                   | `http://192.168.178.48:8000/`      |
 | `Paperless` | `InstanceToken` | The Paperless API Token                                                               | `9d02951f3716e098b`                    |
 | `Paperless` | `ProcessedTagName`     | The application assigns a tag to every processed document to prevent sending twice. Add the string of the tag name. | `DatevSent`                            |
-| `Paperless` | `SearchTagName`        | The tag name used for searching documents e.g. marking them for sending.                                             | `SendToDatev`                          |
-| `Paperless` | `ReceiverAddress`        | The tag name used for searching documents e.g. marking them for sending.                                             | `SendToDatev`                          |
+| `Paperless` | `AddQueueTagName`        | The tag name used for searching documents e.g. marking them for sending.                                             | `SendToDatev`                          |
 | `Paperless.Rules[]` | `Name`            | Custom Rule Name                                       | `OneDemoRule` |
-| `Paperless.Rules[]` | `ReceiverAddress`            | Email address of the receiver                                        | `you@get.it`                             |
+| `Paperless.Rules[].ReceiverAddresses[]` | Keys            | Email address list of the receiver                                        | `- you@get.it` |
+| `Paperless.Rules[].BCCAddresses[]` | Keys            | Email address list of the BCC receivers                                        | `- bcc@get.it` |
 | `Paperless.Rules[]` | `MailHeader`            | A custom string that is added to the email header. If set it will overwrite the default Email.MailHeader.                              | `"Custom Header - file from %first_name%"`                             |
 | `Paperless.Rules[]` | `MailBody`            | A custom string that is added to the email body.MailBody. If set it will overwrite the default Email.MailBody. HTML tags are supported.                              | `"You got a file: %document_title%. Open it <a href='%document_url%'>%document_id%</a>"`                             |
-| `Paperless.Rules.Tags[]` | Keys            | Each Tag of that rule is one line, Tags are && linked                                        | `Invoices`                             |
+| `Paperless.Rules.Tags[]` | Keys            | Each Tag of that rule is one line, Tags are && linked                                        | `- Invoices`                             |
 | `Paperless.Rules[]` | `Correspondent`            | If set the Correspondent of the document must match.                         | `Company`                             |
 | `Paperless.Rules[]` | `Type`          | If set the Type of the document must match.                                        | `Creditnote`                             |
 | `Email` | `SMTPServer`           | An SMTP mail server, with TLS or without                                               | `smtpServer`                           |
@@ -126,11 +126,16 @@ Paperless:
         - Foobar
       Correspondent: Firma  #If you use Correspondent or Type - The doc has to match Tags, Correspondent and Type... 
       Type: "Invoice"
-      ReceiverAddress: you@get.it
+      ReceiverAddresses:
+        - you@get.it
     - Name: "TwoDemoRule"
       Tags: # You can create mutiple rules for a Tag combination to send the doc to different receivers
         - OfflineDocs
-      ReceiverAddress: dont@get.it
+      ReceiverAddresses:
+        - dont@get.it
+        - second@alpha.cc
+      BCCAddresses:
+        - bcc@sss.de
       #If Header and/or Body are set, the base Email.MailBody and/or Email.MailHeader will be overwritten.
       MailBody: "Custom Body for that rule - %first_name%"
       MailHeader: "Custom Header for that rule - %document_id%"
