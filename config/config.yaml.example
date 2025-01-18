@@ -9,13 +9,18 @@ Paperless:
         - Seaside Docs
         - Invoices
         - Foobar
-      ReceiverAddress: you@get.it
+      ReceiverAddresses:
+        - you@get.it
+        - anotherone@super.de
     - Name: "TwoDemoRule"
       Tags: # You can create mutiple rules for a Tag combination to send the doc to different receivers
         - OfflineDocs
       Correspondent: Firma  #If you use Correspondent or Type - Tags, Correspondent and Type has to match 
       Type: "Invoice"
-      ReceiverAddress: dont@get.it
+      ReceiverAddresses:
+        - dont@get.it
+      BCCAddresses:
+        - bcc@issupported.com
       #If Header and/or Body are set, the base Mail.Body and/or Mail.Header will be overwritten.
       MailBody: "Custom SuperBody %first_name%"
       MailHeader: "Custom Header for %document_id%"

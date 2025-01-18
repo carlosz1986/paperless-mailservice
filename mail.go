@@ -52,7 +52,7 @@ func createSubject(s string) (string, error) {
 }
 
 // SendEmailWithPDFBinaryAttachment sends email with pdf Binary attachment
-func SendEmailWithPDFBinaryAttachment(smtpHost, smtpPort, connectionType, sender, user, password, recipient, subject, body, filename string, attachment []byte) error {
+func SendEmailWithPDFBinaryAttachment(smtpHost, smtpPort, connectionType, sender, user, password, subject, body, filename string, bCCAddresses, recipients []string, attachment []byte) error {
 	// create quoted printable with correct line breaks for the subject
 	subjectP, err := createSubject(subject)
 	if err != nil {
@@ -68,7 +68,7 @@ func SendEmailWithPDFBinaryAttachment(smtpHost, smtpPort, connectionType, sender
 	// Create the email header
 	header := make(map[string]string)
 	header["From"] = sender
-	header["To"] = recipient
+	header["To"] = strings.Join(recipients, ",")
 	header["Subject"] = subjectP
 	header["MIME-Version"] = "1.0"
 	header["Content-Type"] = `multipart/mixed; boundary="BOUNDARY"`
@@ -169,8 +169,16 @@ func SendEmailWithPDFBinaryAttachment(smtpHost, smtpPort, connectionType, sender
 		return fmt.Errorf("failed to set mail sender: %v", err)
 	}
 
-	if err := client.Rcpt(recipient); err != nil {
-		return fmt.Errorf("failed to set mail receiver: %v", err)
+	for _, recipient := range recipients {
+		if err := client.Rcpt(recipient); err != nil {
+			return fmt.Errorf("failed to set mail receiver: %v", err)
+		}
+	}
+	// bcc receivers are added to the email, but not shown in the header
+	for _, recipient := range bCCAddresses {
+		if err := client.Rcpt(recipient); err != nil {
+			return fmt.Errorf("failed to set mail BCC receiver: %v", err)
+		}
 	}
 
 	// Get the data writer to send the email body

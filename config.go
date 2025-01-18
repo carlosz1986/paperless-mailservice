@@ -1,9 +1,7 @@
 package main
 
 import (
-	"fmt"
 	"log"
-	"reflect"
 	"strings"
 
 	"github.com/go-playground/validator/v10"
@@ -15,84 +13,80 @@ var Config config
 
 // Struct for config validation using go-playground/validator
 type config struct {
-	Paperless struct {
-		InstanceURL      string `validate:"required,url"`
-		InstanceToken    string `validate:"required"`
-		AddQueueTagName  string `validate:"required"`
-		ProcessedTagName string `validate:"required"`
-		Rules            []struct {
-			Name            string `validate:"required"`
-			ReceiverAddress string `validate:"required,email"`
-			MailBody        string
-			MailHeader      string
-			Tags            []string
-			Type            string
-			Correspondent   string
-		}
-	}
-	Email struct {
+	Paperless Paperless `validate:"required"`
+	Email     struct {
 		SMTPAddress        string `validate:"required,email"`
 		SMTPServer         string `validate:"required,hostname"`
 		SMTPPort           string `validate:"required,min=1,max=65535"`
 		SMTPConnectionType string `validate:"required,oneof=starttls tls"`
 		SMTPUser           string `validate:"required"`
 		SMTPPassword       string `validate:"required"`
-		MailBody           string `validate:"required"`
-		MailHeader         string `validate:"required"`
+		MailBody           string
+		MailHeader         string
 	}
 	RunEveryXMinute int `validate:"required,min=-1,max=65535"`
 }
 
-// validateConfigKeys function to validate required keys
-func validateConfigKeys() error {
-	typeValidations := map[string]string{
-		"Paperless.InstanceURL":      "string",
-		"Paperless.InstanceToken":    "string",
-		"Paperless.AddQueueTagName":  "string",
-		"Paperless.ProcessedTagName": "string",
-		// todo Rules, Correspodent, Type
-		"Email.SMTPAddress":        "string",
-		"Email.SMTPServer":         "string",
-		"Email.SMTPPort":           "int",
-		"Email.SMTPConnectionType": "string",
-		"Email.SMTPUser":           "string",
-		"Email.SMTPPassword":       "string",
-		"Email.MailBody":           "string",
-		"Email.MailHeader":         "string",
-		"RunEveryXMinute":          "int",
-	}
+type Paperless struct {
+	InstanceURL      string `validate:"required,url"`
+	InstanceToken    string `validate:"required"`
+	AddQueueTagName  string `validate:"required"`
+	ProcessedTagName string `validate:"required"`
+	Rules            []rule `validate:"required,dive,required"`
+}
 
-	for key, expectedType := range typeValidations {
-		val := viper.Get(key)
-
-		if val == nil {
-			return fmt.Errorf("missing required config key: %s", key)
-		}
-
-		// Check if the type matches
-		actualType := reflect.TypeOf(val).String()
-		if actualType != expectedType {
-			return fmt.Errorf("invalid type for key '%s': expected '%s', got '%s'", key, expectedType, actualType)
-		}
-	}
-
-	return nil
+type rule struct {
+	Name              string   `validate:"required"`
+	ReceiverAddresses []string `validate:"required,dive,required,email"`
+	BCCAddresses      []string `validate:"dive,required,email"`
+	MailBody          string
+	MailHeader        string
+	Tags              []string
+	Type              string
+	Correspondent     string
 }
 
 // Validate config using go-playground/validator
 func validateWithPlayground(config config) error {
 	validate := validator.New()
 
+	//custom validator to check if rule or paperless has at least a mailbody or header
+	validate.RegisterStructValidation(RuleValidation, rule{})
+
 	err := validate.Struct(config)
 	if err != nil {
 		// If validation fails, print errors
 		for _, err := range err.(validator.ValidationErrors) {
-			fmt.Printf("Validation failed on field '%s', condition: '%s'\n", err.StructField(), err.Tag())
+			log.Printf("Validation failed on field '%s', condition: '%s'\n", err.StructField(), err.Tag())
 		}
 		return err
 	}
 
 	return nil
+}
+
+// ruleValidation custom validator to check details of rule
+func RuleValidation(sl validator.StructLevel) {
+
+	// rule to validate
+	r := sl.Current().Interface().(rule)
+	// entire config struct
+	p := sl.Top().Interface().(config)
+
+	// email body and header must be set in rule or config
+	if len(r.MailBody) == 0 && len(p.Email.MailBody) == 0 {
+		sl.ReportError(r.MailBody, "MailBody", "MailBody", "`MailBody` of rule or at least `Mailbody` of `Config.Email `must be set", "")
+	}
+
+	if len(r.MailHeader) == 0 && len(p.Email.MailHeader) == 0 {
+		sl.ReportError(r.MailHeader, "MailHeader", "MailHeader", "`MailHeader` of rule or at least `MailHeader` of `Config.Email` must be set", "")
+	}
+
+	// atleast tags, correspondent or type must be set in the rule
+	if len(r.Tags) == 0 && len(r.Correspondent) == 0 && len(r.Type) == 0 {
+		sl.ReportError(r, "", "rule", "At least one of `Tags`, `Correspondent` or `Type` must be set in the rule", "")
+	}
+
 }
 
 // LoadConfig function to initialize config
@@ -109,11 +103,6 @@ func LoadConfig() {
 		} else {
 			log.Fatalf("Error reading Config: %s", err)
 		}
-	}
-
-	// Validate required keys
-	if err := validateConfigKeys(); err != nil {
-		log.Fatalf("Config validation failed: %s", err)
 	}
 
 	// Populate struct for validator use
@@ -133,7 +122,25 @@ func PrintRules() {
 	log.Printf("Documents with Tag %s at paperless will be marked for queuing", Config.Paperless.AddQueueTagName)
 
 	for _, rule := range Config.Paperless.Rules {
-		log.Printf("Found Rule \"%s\": Send Documents with Tag(s): \"%s\" to address %s", rule.Name, strings.Join(rule.Tags, ","), rule.ReceiverAddress)
+		var l string
+		var details []string
+
+		if len(rule.Tags) > 0 {
+			details = append(details, "Tag(s): \""+strings.Join(rule.Tags, ",")+"\"")
+		}
+		if len(rule.Correspondent) > 0 {
+			details = append(details, "Correspondent: \""+rule.Correspondent+"\"")
+		}
+		if len(rule.Type) > 0 {
+			details = append(details, "Type: \""+rule.Type+"\"")
+		}
+		l += strings.Join(details, ", ")
+		l += " to Address(es): \"" + strings.Join(rule.ReceiverAddresses, ",") + "\" "
+		if len(rule.BCCAddresses) > 0 {
+			l += "and Bcc to: \"" + strings.Join(rule.BCCAddresses, ",") + "\""
+		}
+
+		log.Printf("Found Rule \"%s\": Send Documents with %s", rule.Name, l)
 	}
 
 	log.Printf("All processed documents will be marked with Tag: %s at paperless", Config.Paperless.ProcessedTagName)
