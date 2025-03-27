@@ -3,6 +3,7 @@ Paperless:
   InstanceToken: 9d02951f3716e098b
   ProcessedTagName: DatevSent
   AddQueueTagName: SendToDatev
+  DownloadOriginal: true
   Rules:
     - Name: "OneDemoRule"
       Tags: #The Doc must hold all three tags 

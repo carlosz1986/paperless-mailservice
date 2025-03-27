@@ -328,7 +328,11 @@ func addTagToDocument(document Document, tag Tag) error {
 }
 
 func downloadDocumentBinary(doc Document) ([]byte, error) {
-	url := fmt.Sprintf("%sapi/documents/%d/download/", Config.Paperless.InstanceURL, doc.ID)
+	original := ""
+	if Config.Paperless.DownloadOriginal {
+		original = "?original=true"
+	}
+	url := fmt.Sprintf("%sapi/documents/%d/download/%s", Config.Paperless.InstanceURL, doc.ID, original)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
