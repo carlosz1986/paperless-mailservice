@@ -33,6 +33,7 @@ type Paperless struct {
 	AddQueueTagName         string `validate:"required"`
 	ProcessedTagName        string `validate:"required"`
 	UseCustomFilenameFormat bool
+	DownloadOriginal        bool   `validate:"boolean"`
 	Rules                   []rule `validate:"required,dive,required"`
 }
 
@@ -92,7 +93,6 @@ func RuleValidation(sl validator.StructLevel) {
 
 // LoadConfig function to initialize config
 func LoadConfig() {
-
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath("config/")
