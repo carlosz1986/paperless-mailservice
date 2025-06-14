@@ -4,6 +4,7 @@ Paperless:
   ProcessedTagName: DatevSent
   AddQueueTagName: SendToDatev
   UseCustomFilenameFormat: false
+  DownloadOriginal: true
   Rules:
     - Name: "OneDemoRule"
       Tags: #The Doc must hold all three tags 
