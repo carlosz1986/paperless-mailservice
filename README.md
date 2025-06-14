@@ -67,6 +67,7 @@ The project can be configured using a yaml config file named config.yaml. The fi
 | `Paperless` | `InstanceToken` | The Paperless API Token                                                               | `9d02951f3716e098b`                    |
 | `Paperless` | `ProcessedTagName`     | The application assigns a tag to every processed document to prevent sending twice. Add the string of the tag name. | `DatevSent`                            |
 | `Paperless` | `AddQueueTagName`        | The tag name used for searching documents e.g. marking them for sending.                                             | `SendToDatev`                          |
+| `Paperless` | `UseCustomFilenameFormat`        | If you have set a custom filename in paperless (PAPERLESS_FILENAME_FORMAT) you can apply this filename to all documents by setting the config to true. Default should be false.                                             | true|false                          |                          |
 | `Paperless.Rules[]` | `Name`            | Custom Rule Name                                       | `OneDemoRule` |
 | `Paperless.Rules[].ReceiverAddresses[]` | Keys            | Email address list of the receiver                                        | `- you@get.it` |
 | `Paperless.Rules[].BCCAddresses[]` | Keys            | Email address list of the BCC receivers                                        | `- bcc@get.it` |
@@ -118,6 +119,7 @@ Paperless:
   InstanceToken: 9d02951f3716e098b
   ProcessedTagName: DatevSent
   AddQueueTagName: SendToDatev
+  UseCustomFilenameFormat: false
   Rules:
     - Name: "OneDemoRule"
       Tags: #The Doc must hold all three tags 

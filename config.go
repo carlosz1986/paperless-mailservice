@@ -28,11 +28,12 @@ type config struct {
 }
 
 type Paperless struct {
-	InstanceURL      string `validate:"required,url"`
-	InstanceToken    string `validate:"required"`
-	AddQueueTagName  string `validate:"required"`
-	ProcessedTagName string `validate:"required"`
-	Rules            []rule `validate:"required,dive,required"`
+	InstanceURL             string `validate:"required,url"`
+	InstanceToken           string `validate:"required"`
+	AddQueueTagName         string `validate:"required"`
+	ProcessedTagName        string `validate:"required"`
+	UseCustomFilenameFormat bool
+	Rules                   []rule `validate:"required,dive,required"`
 }
 
 type rule struct {

@@ -21,10 +21,17 @@ type Document struct {
 	DocumentTypeId   int    `json:"document_type"`
 	StoragePath      int    `json:"storage_path"`
 	OwnerId          int    `json:"owner"`
+	MediaFilename    string `json:"media_filename"`
+	Size             int    `json:"original_size"`
 }
 
 // getFileName returns the archived filename. For encrypted files it uses the original name.
+// If you are using a custom file format and the config variable "UseCustomFilenameFormat" is set to true, it returns the custom filename.
 func (d *Document) getFileName() string {
+	if Config.Paperless.UseCustomFilenameFormat && d.MediaFilename != "" {
+		return d.MediaFilename
+	}
+
 	if d.FileName != "" {
 		return d.FileName
 	}
@@ -250,6 +257,21 @@ func getTags() ([]Tag, error) {
 	return tags, nil
 }
 
+func addMetaData(document *Document) error {
+	resp, err := getRequest(fmt.Sprintf("%sapi/documents/%d/metadata/", Config.Paperless.InstanceURL, document.ID))
+	if err != nil {
+		return fmt.Errorf("failed to fetch meta data for document id=%d: %v", document.ID, err)
+	}
+	defer resp.Body.Close()
+
+	err = json.NewDecoder(resp.Body).Decode(document)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func getDocumentsByTag(tag Tag, processedTag Tag) ([]Document, error) {
 	var documents []Document
 	page := 1
@@ -277,6 +299,14 @@ func getDocumentsByTag(tag Tag, processedTag Tag) ([]Document, error) {
 			break
 		}
 		page++
+	}
+
+	// add meta data to each document
+	for idx := range documents {
+		if err := addMetaData(&documents[idx]); err != nil {
+			fmt.Printf("error fetching meta data: %v", err)
+			return nil, err
+		}
 	}
 
 	return documents, nil
