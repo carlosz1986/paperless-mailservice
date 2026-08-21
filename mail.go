@@ -53,7 +53,45 @@ func createSubject(s string) (string, error) {
 	return out, nil
 }
 
+
+
+// loginAuth implements the smtp.Auth interface using the SMTP "LOGIN"
+// authentication mechanism. Go's standard library only provides
+// smtp.PlainAuth (AUTH PLAIN), which Exchange Online / Office365 rejects
+// with "504 5.7.4 Unrecognized authentication type". This implementation
+// is required for successful authentication against smtp.office365.com.
+
+type loginAuth struct {
+	username, password string
+}
+
+func LoginAuth(username, password string) smtp.Auth {
+	return &loginAuth{username, password}
+}
+
+// Start begins the LOGIN authentication exchange.
+func (a *loginAuth) Start(server *smtp.ServerInfo) (string, []byte, error) {
+	return "LOGIN", []byte{}, nil
+}
+
+// Next responds to the server's Username/Password prompts during
+// the LOGIN authentication exchange.
+func (a *loginAuth) Next(fromServer []byte, more bool) ([]byte, error) {
+	if more {
+		switch string(fromServer) {
+		case "Username:":
+			return []byte(a.username), nil
+		case "Password:":
+			return []byte(a.password), nil
+		default:
+			return nil, fmt.Errorf("unknown from server: %s", fromServer)
+		}
+	}
+	return nil, nil
+}
+
 // SendEmailWithPDFBinaryAttachment sends email with pdf Binary attachment
+
 func SendEmailWithPDFBinaryAttachment(smtpHost, smtpPort, connectionType, sender, user, password, subject, body, filename string, bCCAddresses, recipients []string, attachment []byte) error {
 	// create quoted printable with correct line breaks for the subject
 	subjectP, err := createSubject(subject)
@@ -133,7 +171,7 @@ func SendEmailWithPDFBinaryAttachment(smtpHost, smtpPort, connectionType, sender
 	emailBuf.WriteString(fmt.Sprintf(`%s--BOUNDARY111--`, "\r\n"))
 
 	addr := fmt.Sprintf("%s:%s", smtpHost, smtpPort)
-	auth := smtp.PlainAuth("", user, password, smtpHost)
+	auth := LoginAuth(user, password)
 
 	var client *smtp.Client
 
